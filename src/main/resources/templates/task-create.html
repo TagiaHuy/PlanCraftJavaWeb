@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm nhiệm vụ mới</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Thêm nhiệm vụ mới</h1>
+    <form th:action="@{/tasks/create}" method="post">
+        <input type="hidden" name="stageId" th:value="${stageId}">
+        <label>Tên nhiệm vụ:</label>
+        <input type="text" name="name" required>
+        <label>Mô tả:</label>
+        <textarea name="description" rows="2"></textarea>
+        <button type="submit">Thêm nhiệm vụ</button>
+    </form>
+    <p><a th:href="@{/dashboard}">Quay lại trang chủ</a></p>
+</div>
+</body>
+</html> 

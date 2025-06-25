@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo mục tiêu mới</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Tạo mục tiêu mới</h1>
+    <form th:action="@{/goals/create}" method="post">
+        <label>Tên mục tiêu:</label>
+        <input type="text" name="name" required>
+        <label>Deadline:</label>
+        <input type="date" name="deadline" required>
+        <label>Lý do chọn mục tiêu:</label>
+        <input type="text" name="reason" required>
+        <label>Mô tả chi tiết:</label>
+        <textarea name="description" rows="3"></textarea>
+        <button type="submit">Tạo mục tiêu</button>
+    </form>
+    <p><a th:href="@{/dashboard}">Quay lại trang chủ</a></p>
+</div>
+</body>
+</html> 

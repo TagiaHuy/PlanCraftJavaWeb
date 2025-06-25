@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang chủ - Mục tiêu cá nhân</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Quản lý mục tiêu cá nhân</h1>
+    <a href="/goals/create" class="btn">+ Tạo mục tiêu mới</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Tên mục tiêu</th>
+                <th>Deadline</th>
+                <th>Lý do</th>
+                <th>Tiến độ</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="goal : ${goals}">
+                <td th:text="${goal.name}"></td>
+                <td th:text="${goal.deadline}"></td>
+                <td th:text="${goal.reason}"></td>
+                <td>
+                    <span th:text="${goal.status}"></span>
+                </td>
+                <td>
+                    <a th:href="@{'/goals/' + ${goal.id}}">Chi tiết</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html> 

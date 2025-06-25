@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Thêm giai đoạn mới</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Thêm giai đoạn mới</h1>
+    <form th:action="@{/stages/create}" method="post">
+        <input type="hidden" name="goalId" th:value="${goalId}">
+        <label>Tên giai đoạn:</label>
+        <input type="text" name="name" required>
+        <label>Mô tả:</label>
+        <textarea name="description" rows="2"></textarea>
+        <label>Ngày bắt đầu:</label>
+        <input type="date" name="startDate" required>
+        <label>Ngày kết thúc:</label>
+        <input type="date" name="endDate" required>
+        <button type="submit">Thêm giai đoạn</button>
+    </form>
+    <p><a th:href="@{/dashboard}">Quay lại trang chủ</a></p>
+</div>
+</body>
+</html> 

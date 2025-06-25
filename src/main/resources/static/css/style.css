@@ -97,4 +97,31 @@ th, td {
 }
 th {
     background: #eee;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: linear-gradient(90deg, #4f8cff 0%, #2355d6 100%);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    margin-bottom: 18px;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+.btn:hover {
+    background: linear-gradient(90deg, #2355d6 0%, #4f8cff 100%);
+}
+textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #f9fafb;
+    font-size: 15px;
+    margin-bottom: 16px;
+    resize: vertical;
 } 

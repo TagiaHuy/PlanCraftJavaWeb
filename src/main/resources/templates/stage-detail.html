@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết giai đoạn</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="container">
+    <h1 th:text="${stage.name}">Tên giai đoạn</h1>
+    <p><b>Thời gian:</b> <span th:text="${stage.startDate}"></span> - <span th:text="${stage.endDate}"></span></p>
+    <p><b>Mô tả:</b> <span th:text="${stage.description}"></span></p>
+    <p><b>Trạng thái:</b> <span th:text="${stage.status}"></span></p>
+    <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn">+ Thêm nhiệm vụ</a>
+    <h2>Danh sách nhiệm vụ</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Tên nhiệm vụ</th>
+                <th>Mô tả</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="task : ${stage.tasks}">
+                <td th:text="${task.name}"></td>
+                <td th:text="${task.description}"></td>
+                <td th:text="${task.status}"></td>
+                <td>
+                    <!-- Có thể thêm nút cập nhật trạng thái hoặc xóa -->
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <p><a th:href="@{'/goals/' + ${stage.goal.id}}">Quay lại mục tiêu</a></p>
+</div>
+</body>
+</html> 
