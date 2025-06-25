@@ -18,6 +18,7 @@
             <ul class="nav-menu">
                 <li><a href="/dashboard" class="nav-link active">Dashboard</a></li>
                 <li><a href="/goals/create" class="nav-link">Tạo mục tiêu</a></li>
+                <li><a href="/stages" class="nav-link">Giai đoạn</a></li>
                 <li><a href="/users" class="nav-link">Quản lý</a></li>
                 <li><a href="/logout" class="nav-link">Đăng xuất</a></li>
             </ul>
@@ -37,112 +38,236 @@
         <div class="main-content">
             <div class="content">
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-3 mb-8">
-                    <div class="card text-center">
-                        <div class="card-header">
-                            <i class="fas fa-target" style="font-size: 2rem; color: var(--primary-color);"></i>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
+                            <i class="fas fa-target"></i>
                         </div>
-                        <div class="card-title" th:text="${#lists.size(goals)}">0</div>
-                        <div class="card-subtitle">Tổng mục tiêu</div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals)}">0</h3>
+                            <p style="color: var(--gray-600);">Tổng mục tiêu</p>
+                        </div>
                     </div>
-                    <div class="card text-center">
-                        <div class="card-header">
-                            <i class="fas fa-clock" style="font-size: 2rem; color: var(--accent-color);"></i>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color), #f59e0b);">
+                            <i class="fas fa-clock"></i>
                         </div>
-                        <div class="card-title" th:text="${#lists.size(goals.?[status == 'IN_PROGRESS'])}">0</div>
-                        <div class="card-subtitle">Đang thực hiện</div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals.?[status == 'IN_PROGRESS'])}">0</h3>
+                            <p style="color: var(--gray-600);">Đang thực hiện</p>
+                        </div>
                     </div>
-                    <div class="card text-center">
-                        <div class="card-header">
-                            <i class="fas fa-check-circle" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--secondary-color), #10b981);">
+                            <i class="fas fa-check-circle"></i>
                         </div>
-                        <div class="card-title" th:text="${#lists.size(goals.?[status == 'COMPLETED'])}">0</div>
-                        <div class="card-subtitle">Hoàn thành</div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals.?[status == 'COMPLETED'])}">0</h3>
+                            <p style="color: var(--gray-600);">Hoàn thành</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--gray-500), #6b7280);">
+                            <i class="fas fa-pause-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals.?[status == 'NOT_STARTED'])}">0</h3>
+                            <p style="color: var(--gray-600);">Chưa bắt đầu</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Action Button -->
-                <div class="flex justify-between items-center mb-6">
-                    <h2 style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--gray-800);">
-                        Mục tiêu của bạn
-                    </h2>
-                    <a href="/goals/create" class="btn btn-primary">
-                        <i class="fas fa-plus"></i>
-                        Tạo mục tiêu mới
-                    </a>
-                </div>
-
-                <!-- Goals List -->
-                <div th:if="${#lists.isEmpty(goals)}" class="text-center">
-                    <div class="card">
-                        <i class="fas fa-inbox" style="font-size: 4rem; color: var(--gray-400); margin-bottom: var(--spacing-4);"></i>
-                        <h3 style="color: var(--gray-600); margin-bottom: var(--spacing-2);">Chưa có mục tiêu nào</h3>
-                        <p style="color: var(--gray-500); margin-bottom: var(--spacing-6);">
-                            Bắt đầu tạo mục tiêu đầu tiên của bạn để bắt đầu hành trình thành công!
+                <!-- Goals Section Header -->
+                <div class="goals-section-header">
+                    <div class="section-title">
+                        <h2 style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--gray-800);">
+                            <i class="fas fa-bullseye" style="color: var(--primary-color); margin-right: var(--spacing-3);"></i>
+                            Mục tiêu của bạn
+                        </h2>
+                        <p style="color: var(--gray-600); font-size: var(--font-size-sm);">
+                            Quản lý và theo dõi tiến độ các mục tiêu
                         </p>
+                    </div>
+                    <div class="section-actions">
                         <a href="/goals/create" class="btn btn-primary">
                             <i class="fas fa-plus"></i>
-                            Tạo mục tiêu đầu tiên
+                            Tạo mục tiêu mới
                         </a>
                     </div>
                 </div>
 
-                <div th:if="${!#lists.isEmpty(goals)}" class="grid grid-cols-1">
-                    <div th:each="goal : ${goals}" class="goal-card fade-in" th:onclick="'window.location.href=\'/goals/' + ${goal.id} + '\''">
+                <!-- Search and Filters -->
+                <div class="filters-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm mục tiêu..." class="search-input">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">
+                            <i class="fas fa-list"></i>
+                            Tất cả
+                        </button>
+                        <button class="filter-btn" data-filter="NOT_STARTED">
+                            <i class="fas fa-pause-circle"></i>
+                            Chưa bắt đầu
+                        </button>
+                        <button class="filter-btn" data-filter="IN_PROGRESS">
+                            <i class="fas fa-clock"></i>
+                            Đang thực hiện
+                        </button>
+                        <button class="filter-btn" data-filter="COMPLETED">
+                            <i class="fas fa-check-circle"></i>
+                            Hoàn thành
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Goals Grid -->
+                <div class="goals-grid" id="goalsGrid">
+                    <div th:each="goal : ${goals}" class="goal-card fade-in" th:data-status="${goal.status}" th:data-goal-id="${goal.id}">
                         <div class="goal-header">
-                            <div>
-                                <div class="goal-title" th:text="${goal.name}">Tên mục tiêu</div>
-                                <div class="goal-reason" th:text="${goal.reason}">Lý do</div>
+                            <div class="goal-status-badge" th:class="${'goal-status-badge ' + goal.status.toLowerCase()}">
+                                <i th:class="${goal.status == 'COMPLETED' ? 'fas fa-check-circle' : 
+                                              goal.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
+                                <span th:text="${goal.status == 'COMPLETED' ? 'Hoàn thành' : 
+                                               goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa bắt đầu'}">Trạng thái</span>
                             </div>
-                            <div class="goal-deadline" th:text="${#temporals.format(goal.deadline, 'dd/MM/yyyy')}">Deadline</div>
+                            <div class="goal-actions">
+                                <button class="action-btn" th:onclick="'editGoal(' + ${goal.id} + ')'" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn" th:onclick="'deleteGoal(' + ${goal.id} + ')'" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                         
-                        <div class="goal-progress">
-                            <div class="flex justify-between items-center mb-2">
-                                <span style="font-size: var(--font-size-sm); color: var(--gray-600);">Tiến độ</span>
-                                <span style="font-size: var(--font-size-sm); font-weight: 500; color: var(--gray-700);" 
-                                      th:text="${goal.status == 'PENDING' ? 'Chưa bắt đầu' : goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Hoàn thành'}">
-                                    Trạng thái
-                                </span>
+                        <div class="goal-content">
+                            <h3 class="goal-title" th:text="${goal.name}">Tên mục tiêu</h3>
+                            <p class="goal-reason" th:text="${goal.reason}">Lý do thực hiện</p>
+                            <p class="goal-description" th:text="${goal.description}">Mô tả mục tiêu</p>
+                            
+                            <div class="goal-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span th:text="'Hạn: ' + ${#temporals.format(goal.deadline, 'dd/MM/yyyy')}">Deadline</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span th:text="${#lists.size(goal.stages)} + ' giai đoạn'">Giai đoạn</span>
+                                </div>
                             </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" 
-                                     th:style="'width: ' + ${goal.status == 'PENDING' ? '0' : goal.status == 'IN_PROGRESS' ? '50' : '100'} + '%'">
+                            
+                            <div class="goal-progress">
+                                <div class="progress-info">
+                                    <span>Tiến độ</span>
+                                    <span th:text="${goal.status == 'COMPLETED' ? '100%' : goal.status == 'IN_PROGRESS' ? '50%' : '0%'}">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" 
+                                         th:style="'width: ' + ${goal.status == 'COMPLETED' ? '100' : goal.status == 'IN_PROGRESS' ? '50' : '0'} + '%'">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="flex justify-between items-center">
-                            <div class="goal-status" 
-                                 th:class="${goal.status == 'PENDING' ? 'status-pending' : goal.status == 'IN_PROGRESS' ? 'status-in-progress' : 'status-completed'}">
-                                <i th:class="${goal.status == 'PENDING' ? 'fas fa-clock' : goal.status == 'IN_PROGRESS' ? 'fas fa-play' : 'fas fa-check'}"></i>
-                                <span th:text="${goal.status == 'PENDING' ? 'Chưa bắt đầu' : goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Hoàn thành'}">
-                                    Trạng thái
-                                </span>
-                            </div>
-                            <div class="flex gap-2">
-                                <a th:href="@{'/goals/' + ${goal.id}}" class="btn btn-sm btn-secondary" 
-                                   th:onclick="'event.stopPropagation();'">
-                                    <i class="fas fa-eye"></i>
-                                    Chi tiết
-                                </a>
-                            </div>
+                        <div class="goal-footer">
+                            <a th:href="@{'/goals/' + ${goal.id}}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-eye"></i>
+                                Xem chi tiết
+                            </a>
+                            <a th:href="@{'/stages/create?goalId=' + ${goal.id}}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i>
+                                Thêm giai đoạn
+                            </a>
                         </div>
                     </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${#lists.isEmpty(goals)}" class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <h3>Chưa có mục tiêu nào</h3>
+                    <p>Tạo mục tiêu đầu tiên để bắt đầu hành trình thành công của bạn</p>
+                    <a href="/goals/create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Tạo mục tiêu đầu tiên
+                    </a>
+                </div>
+
+                <!-- Load More Button -->
+                <div th:if="${#lists.size(goals) > 6}" class="load-more-section">
+                    <button id="loadMoreBtn" class="btn btn-secondary" onclick="loadMoreGoals()">
+                        <i class="fas fa-chevron-down"></i>
+                        Xem thêm mục tiêu
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Add smooth scrolling and animations
         document.addEventListener('DOMContentLoaded', function() {
-            // Add fade-in animation to cards
-            const cards = document.querySelectorAll('.goal-card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
+            // Initialize goals display
+            const goalsPerPage = 6;
+            let currentPage = 1;
+            const allGoals = document.querySelectorAll('.goal-card');
+            const totalGoals = allGoals.length;
             
+            // Show initial goals
+            showGoals(1, goalsPerPage);
+            
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const goalCards = document.querySelectorAll('.goal-card');
+                
+                goalCards.forEach(card => {
+                    const title = card.querySelector('.goal-title').textContent.toLowerCase();
+                    const reason = card.querySelector('.goal-reason').textContent.toLowerCase();
+                    const description = card.querySelector('.goal-description').textContent.toLowerCase();
+                    
+                    if (title.includes(searchTerm) || reason.includes(searchTerm) || description.includes(searchTerm)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                // Reset pagination when searching
+                currentPage = 1;
+                updateLoadMoreButton();
+            });
+
+            // Filter functionality
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    
+                    // Update active button
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filter cards
+                    const goalCards = document.querySelectorAll('.goal-card');
+                    goalCards.forEach(card => {
+                        if (filter === 'all' || card.dataset.status === filter) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    
+                    // Reset pagination when filtering
+                    currentPage = 1;
+                    updateLoadMoreButton();
+                });
+            });
+
             // Add hover effects
             const goalCards = document.querySelectorAll('.goal-card');
             goalCards.forEach(card => {
@@ -155,6 +280,425 @@
                 });
             });
         });
+
+        // Show goals with pagination
+        function showGoals(page, perPage) {
+            const goalCards = document.querySelectorAll('.goal-card');
+            const startIndex = (page - 1) * perPage;
+            const endIndex = startIndex + perPage;
+            
+            goalCards.forEach((card, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    card.style.display = 'block';
+                    card.style.animationDelay = ((index - startIndex) * 0.1) + 's';
+                } else if (index >= endIndex) {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Load more goals
+        function loadMoreGoals() {
+            const goalsPerPage = 6;
+            currentPage++;
+            showGoals(currentPage, goalsPerPage);
+            updateLoadMoreButton();
+        }
+
+        // Update load more button
+        function updateLoadMoreButton() {
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const visibleGoals = document.querySelectorAll('.goal-card[style*="display: block"]').length;
+            const totalGoals = document.querySelectorAll('.goal-card').length;
+            
+            if (visibleGoals >= totalGoals) {
+                loadMoreBtn.style.display = 'none';
+            } else {
+                loadMoreBtn.style.display = 'block';
+            }
+        }
+
+        // Edit goal
+        function editGoal(goalId) {
+            // TODO: Implement edit functionality
+            alert('Chức năng chỉnh sửa mục tiêu sẽ được thêm sau');
+        }
+
+        // Delete goal
+        function deleteGoal(goalId) {
+            if (confirm('Bạn có chắc chắn muốn xóa mục tiêu này?')) {
+                fetch(`/api/goals/${goalId}`, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        const goalCard = document.querySelector(`[data-goal-id="${goalId}"]`);
+                        goalCard.style.animation = 'fadeOut 0.3s ease-out';
+                        setTimeout(() => {
+                            goalCard.remove();
+                            updateStats();
+                        }, 300);
+                    }
+                });
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalGoals = document.querySelectorAll('.goal-card').length;
+            const completedGoals = document.querySelectorAll('.goal-card[data-status="COMPLETED"]').length;
+            const inProgressGoals = document.querySelectorAll('.goal-card[data-status="IN_PROGRESS"]').length;
+            const notStartedGoals = document.querySelectorAll('.goal-card[data-status="NOT_STARTED"]').length;
+            
+            // Update stats display (you can add more sophisticated updates here)
+            console.log(`Total: ${totalGoals}, Completed: ${completedGoals}, In Progress: ${inProgressGoals}, Not Started: ${notStartedGoals}`);
+        }
     </script>
+
+    <style>
+        /* Additional styles for improved dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-6);
+            margin-bottom: var(--spacing-8);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-4);
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--border-radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stat-content h3 {
+            margin: 0;
+            margin-bottom: var(--spacing-1);
+        }
+
+        .stat-content p {
+            margin: 0;
+            font-size: var(--font-size-sm);
+        }
+
+        .goals-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-6);
+            gap: var(--spacing-6);
+        }
+
+        .section-title h2 {
+            margin: 0;
+            margin-bottom: var(--spacing-2);
+        }
+
+        .section-title p {
+            margin: 0;
+        }
+
+        .filters-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-6);
+            gap: var(--spacing-4);
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: var(--spacing-3);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-500);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-3) var(--spacing-3) var(--spacing-3) var(--spacing-10);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-sm);
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-bg);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: var(--spacing-2);
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: var(--spacing-2) var(--spacing-4);
+            border: 1px solid var(--gray-300);
+            background: white;
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: var(--spacing-6);
+            margin-bottom: var(--spacing-8);
+        }
+
+        .goal-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid var(--gray-200);
+        }
+
+        .goal-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-4);
+        }
+
+        .goal-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            padding: var(--spacing-1) var(--spacing-2);
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+
+        .goal-status-badge.completed {
+            background: var(--success-bg);
+            color: var(--success-color);
+        }
+
+        .goal-status-badge.in_progress {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+        }
+
+        .goal-status-badge.not_started {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .goal-actions {
+            display: flex;
+            gap: var(--spacing-1);
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            padding: var(--spacing-1);
+            border-radius: var(--border-radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .goal-content {
+            margin-bottom: var(--spacing-4);
+        }
+
+        .goal-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-800);
+            margin: 0 0 var(--spacing-2) 0;
+        }
+
+        .goal-reason {
+            color: var(--primary-color);
+            font-weight: 500;
+            font-size: var(--font-size-sm);
+            margin: 0 0 var(--spacing-2) 0;
+        }
+
+        .goal-description {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            line-height: 1.5;
+            margin: 0 0 var(--spacing-3) 0;
+        }
+
+        .goal-meta {
+            display: flex;
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            font-size: var(--font-size-xs);
+            color: var(--gray-600);
+        }
+
+        .goal-progress {
+            margin-bottom: var(--spacing-4);
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-2);
+            font-size: var(--font-size-xs);
+            color: var(--gray-600);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--gray-200);
+            border-radius: var(--border-radius-full);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: var(--border-radius-full);
+            transition: width 0.3s ease;
+        }
+
+        .goal-footer {
+            display: flex;
+            gap: var(--spacing-2);
+        }
+
+        .goal-footer .btn {
+            flex: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-12) var(--spacing-6);
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--gray-300);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .empty-state h3 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .empty-state p {
+            color: var(--gray-600);
+            margin-bottom: var(--spacing-6);
+        }
+
+        .load-more-section {
+            text-align: center;
+            margin-top: var(--spacing-8);
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .goals-section-header {
+                flex-direction: column;
+                gap: var(--spacing-4);
+            }
+
+            .filters-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+
+            .filter-buttons {
+                justify-content: center;
+            }
+
+            .goals-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .goal-meta {
+                flex-direction: column;
+                gap: var(--spacing-2);
+            }
+        }
+    </style>
 </body>
 </html> 
