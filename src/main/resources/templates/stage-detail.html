@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
     <!-- Navigation -->
@@ -20,7 +22,11 @@
                 <li><a href="/goals/create" class="nav-link">Tạo mục tiêu</a></li>
                 <li><a href="/stages" class="nav-link">Giai đoạn</a></li>
                 <li><a href="/users" class="nav-link">Quản lý</a></li>
-                <li><a href="/logout" class="nav-link">Đăng xuất</a></li>
+                <li>
+                    <form th:action="@{/logout}" method="post" style="display:inline;">
+                        <button type="submit" class="nav-link" style="background:none; border:none; cursor:pointer;">Đăng xuất</button>
+                    </form>
+                </li>
             </ul>
         </div>
     </nav>
@@ -197,65 +203,23 @@
             });
         });
 
-        // Toggle task status
-        function toggleTaskStatus(taskId, completed) {
-            const status = completed ? 'COMPLETED' : 'NOT_STARTED';
-            
-            fetch(`/api/tasks/${taskId}`, {
-                method: 'PUT',
+        // Toggle task status (AJAX)
+        window.toggleTaskStatus = function(taskId, checked) {
+            const status = checked ? 'hoàn thành' : 'chưa làm';
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+            fetch(`/api/tasks/${taskId}/status?status=${encodeURIComponent(status)}`, {
+                method: 'PATCH',
                 headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    status: status
-                })
-            }).then(response => {
-                if (response.ok) {
-                    // Update UI
-                    const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
-                    const statusElement = taskItem.querySelector('.task-status');
-                    const statusIcon = statusElement.querySelector('i');
-                    const statusText = statusElement.querySelector('span');
-                    
-                    if (completed) {
-                        statusElement.className = 'task-status completed';
-                        statusIcon.className = 'fas fa-check-circle';
-                        statusText.textContent = 'Hoàn thành';
-                        taskItem.classList.add('completed');
-                    } else {
-                        statusElement.className = 'task-status not-started';
-                        statusIcon.className = 'fas fa-pause-circle';
-                        statusText.textContent = 'Chưa làm';
-                        taskItem.classList.remove('completed');
-                    }
-                    
-                    // Update progress
-                    updateProgress();
+                    'X-Requested-With': 'XMLHttpRequest',
+                    [csrfHeader]: csrfToken
+                }
+            })
+            .then(res => {
+                if (res.ok) {
+                    window.location.reload();
                 }
             });
-        }
-
-        // Update progress
-        function updateProgress() {
-            const totalTasks = document.querySelectorAll('.task-item').length;
-            const completedTasks = document.querySelectorAll('.task-checkbox-input:checked').length;
-            const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-            
-            // Update progress bar
-            const progressFill = document.querySelector('.progress-fill-large');
-            progressFill.style.width = percentage + '%';
-            
-            // Update percentage text
-            const percentageText = document.querySelector('.progress-percentage');
-            percentageText.textContent = percentage + '%';
-            
-            // Update stats
-            const progressStats = document.querySelector('.progress-stats span');
-            progressStats.textContent = `${completedTasks} / ${totalTasks} nhiệm vụ hoàn thành`;
-            
-            // Update completed tasks count
-            const completedCount = document.querySelector('.stat-card:nth-child(3) h3');
-            completedCount.textContent = completedTasks;
         }
 
         // Edit task

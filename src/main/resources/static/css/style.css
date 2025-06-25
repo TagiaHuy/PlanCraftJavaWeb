@@ -140,6 +140,45 @@ body {
     color: white;
 }
 
+/* Nút ở navbar nổi bật, hiện đại */
+.navbar .nav-link,
+.navbar form .nav-link {
+    color: var(--gray-600);
+    background: none;
+    border: none;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: var(--font-size-base);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    box-shadow: none;
+    outline: none;
+    position: relative;
+}
+
+.navbar .nav-link.active,
+.navbar form .nav-link.active {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 2px 8px 0 rgb(99 102 241 / 10%);
+}
+
+.navbar .nav-link:hover,
+.navbar form .nav-link:hover {
+    background: var(--primary-light);
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 2px 8px 0 rgb(99 102 241 / 10%);
+}
+
+.navbar .nav-link:focus,
+.navbar form .nav-link:focus {
+    background: var(--primary-dark);
+    color: #fff;
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 /* Header */
 .header {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);

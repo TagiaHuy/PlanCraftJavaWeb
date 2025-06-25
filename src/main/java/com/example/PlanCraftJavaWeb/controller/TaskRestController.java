@@ -3,6 +3,7 @@ package com.example.PlanCraftJavaWeb.controller;
 import com.example.PlanCraftJavaWeb.entity.Task;
 import com.example.PlanCraftJavaWeb.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,5 +39,13 @@ public class TaskRestController {
     @DeleteMapping("/{id}")
     public void deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
+        Task task = taskService.getTaskById(id).orElseThrow();
+        task.setStatus(status);
+        taskService.saveTask(task);
+        return ResponseEntity.ok().build();
     }
 } 

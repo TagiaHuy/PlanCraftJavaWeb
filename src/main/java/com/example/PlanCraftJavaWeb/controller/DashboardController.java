@@ -3,10 +3,14 @@ package com.example.PlanCraftJavaWeb.controller;
 import com.example.PlanCraftJavaWeb.entity.Goal;
 import com.example.PlanCraftJavaWeb.entity.Stage;
 import com.example.PlanCraftJavaWeb.entity.Task;
+import com.example.PlanCraftJavaWeb.entity.User;
 import com.example.PlanCraftJavaWeb.service.GoalService;
 import com.example.PlanCraftJavaWeb.service.StageService;
 import com.example.PlanCraftJavaWeb.service.TaskService;
+import com.example.PlanCraftJavaWeb.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,12 +26,16 @@ public class DashboardController {
     private StageService stageService;
     @Autowired
     private TaskService taskService;
+    @Autowired
+    private UserService userService;
 
     // Trang chủ dashboard
     @GetMapping({"/dashboard", "/"})
     public String dashboard(Model model) {
-        // TODO: Lấy userId thực tế từ session
-        Long userId = 1L;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userService.findByUsername(username);
+        Long userId = user.getId();
         model.addAttribute("goals", goalService.getGoalsByUserId(userId));
         return "dashboard";
     }
@@ -42,9 +50,12 @@ public class DashboardController {
                              @RequestParam String deadline,
                              @RequestParam String reason,
                              @RequestParam String description) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userService.findByUsername(username);
+
         Goal goal = new Goal();
-        // TODO: Lấy user thực tế từ session
-        goal.setUser(null);
+        goal.setUser(user);
         goal.setName(name);
         goal.setDeadline(LocalDate.parse(deadline));
         goal.setReason(reason);

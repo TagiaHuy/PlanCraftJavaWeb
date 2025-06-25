@@ -19,7 +19,11 @@
                 <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
                 <li><a href="/goals/create" class="nav-link active">Tạo mục tiêu</a></li>
                 <li><a href="/users" class="nav-link">Quản lý</a></li>
-                <li><a href="/logout" class="nav-link">Đăng xuất</a></li>
+                <li>
+                    <form th:action="@{/logout}" method="post" style="display:inline;">
+                        <button type="submit" class="nav-link" style="background:none; border:none; cursor:pointer;">Đăng xuất</button>
+                    </form>
+                </li>
             </ul>
         </div>
     </nav>
