@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanCraft - Quản lý giai đoạn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">
+                <i class="fas fa-rocket"></i> PlanCraft
+            </a>
+            <ul class="nav-menu">
+                <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="/goals/create" class="nav-link">Tạo mục tiêu</a></li>
+                <li><a href="/stages" class="nav-link active">Giai đoạn</a></li>
+                <li><a href="/users" class="nav-link">Quản lý</a></li>
+                <li><a href="/logout" class="nav-link">Đăng xuất</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-content">
+            <div class="content">
+                <!-- Header Section -->
+                <div class="header-section">
+                    <div class="header-content">
+                        <div>
+                            <h1 style="font-size: var(--font-size-3xl); font-weight: 700; color: var(--gray-800); margin-bottom: var(--spacing-2);">
+                                <i class="fas fa-layer-group" style="color: var(--accent-color); margin-right: var(--spacing-3);"></i>
+                                Quản lý giai đoạn
+                            </h1>
+                            <p style="color: var(--gray-600); font-size: var(--font-size-lg);">
+                                Theo dõi và quản lý tất cả các giai đoạn của bạn
+                            </p>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" onclick="showCreateStageModal()">
+                                <i class="fas fa-plus"></i>
+                                Thêm giai đoạn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(stages)}">0</h3>
+                            <p style="color: var(--gray-600);">Tổng giai đoạn</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--secondary-color), #10b981);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(stages.?[status == 'COMPLETED'])}">0</h3>
+                            <p style="color: var(--gray-600);">Đã hoàn thành</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color), #f59e0b);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(stages.?[status == 'IN_PROGRESS'])}">0</h3>
+                            <p style="color: var(--gray-600);">Đang thực hiện</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--gray-500), #6b7280);">
+                            <i class="fas fa-pause-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(stages.?[status == 'NOT_STARTED'])}">0</h3>
+                            <p style="color: var(--gray-600);">Chưa bắt đầu</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters and Search -->
+                <div class="filters-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm giai đoạn..." class="search-input">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">
+                            <i class="fas fa-list"></i>
+                            Tất cả
+                        </button>
+                        <button class="filter-btn" data-filter="NOT_STARTED">
+                            <i class="fas fa-pause-circle"></i>
+                            Chưa bắt đầu
+                        </button>
+                        <button class="filter-btn" data-filter="IN_PROGRESS">
+                            <i class="fas fa-clock"></i>
+                            Đang thực hiện
+                        </button>
+                        <button class="filter-btn" data-filter="COMPLETED">
+                            <i class="fas fa-check-circle"></i>
+                            Hoàn thành
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stages Grid -->
+                <div class="stages-grid" id="stagesGrid">
+                    <div th:each="stage : ${stages}" class="stage-card fade-in" th:data-status="${stage.status}">
+                        <div class="stage-header">
+                            <div class="stage-status" th:class="${'stage-status ' + stage.status.toLowerCase()}">
+                                <i th:class="${stage.status == 'COMPLETED' ? 'fas fa-check-circle' : 
+                                              stage.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
+                                <span th:text="${stage.status == 'COMPLETED' ? 'Hoàn thành' : 
+                                               stage.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa bắt đầu'}">Trạng thái</span>
+                            </div>
+                            <div class="stage-actions">
+                                <button class="action-btn" th:onclick="'editStage(' + ${stage.id} + ')'" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn" th:onclick="'deleteStage(' + ${stage.id} + ')'" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="stage-content">
+                            <h3 class="stage-title" th:text="${stage.name}">Tên giai đoạn</h3>
+                            <p class="stage-description" th:text="${stage.description}">Mô tả giai đoạn</p>
+                            
+                            <div class="stage-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span th:text="${#temporals.format(stage.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(stage.endDate, 'dd/MM/yyyy')}">Thời gian</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-tasks"></i>
+                                    <span th:text="${#lists.size(stage.tasks)} + ' nhiệm vụ'">Nhiệm vụ</span>
+                                </div>
+                            </div>
+                            
+                            <div class="stage-progress">
+                                <div class="progress-info">
+                                    <span>Tiến độ</span>
+                                    <span th:text="${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) + '%' : '0%'}">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" th:style="'width: ' + ${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) : 0} + '%'"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stage-footer">
+                            <a th:href="@{'/stages/' + ${stage.id}}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-eye"></i>
+                                Xem chi tiết
+                            </a>
+                            <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i>
+                                Thêm nhiệm vụ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${#lists.isEmpty(stages)}" class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3>Chưa có giai đoạn nào</h3>
+                    <p>Tạo giai đoạn đầu tiên để bắt đầu quản lý dự án của bạn</p>
+                    <button class="btn btn-primary" onclick="showCreateStageModal()">
+                        <i class="fas fa-plus"></i>
+                        Tạo giai đoạn đầu tiên
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Stage Modal -->
+    <div id="createStageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus"></i> Thêm giai đoạn mới</h2>
+                <button class="modal-close" onclick="closeCreateStageModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createStageForm" class="modal-form">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tag"></i>
+                        Tên giai đoạn
+                    </label>
+                    <input type="text" name="name" class="form-input" placeholder="Nhập tên giai đoạn" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-align-left"></i>
+                        Mô tả
+                    </label>
+                    <textarea name="description" class="form-input form-textarea" placeholder="Mô tả chi tiết về giai đoạn này..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-bullseye"></i>
+                        Thuộc mục tiêu
+                    </label>
+                    <select name="goalId" class="form-input" required>
+                        <option value="">Chọn mục tiêu</option>
+                        <option th:each="goal : ${goals}" th:value="${goal.id}" th:text="${goal.name}">Mục tiêu</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-plus"></i>
+                            Ngày bắt đầu
+                        </label>
+                        <input type="date" name="startDate" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-check"></i>
+                            Ngày kết thúc
+                        </label>
+                        <input type="date" name="endDate" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateStageModal()">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Thêm giai đoạn
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            const stageCards = document.querySelectorAll('.stage-card');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                stageCards.forEach(card => {
+                    const title = card.querySelector('.stage-title').textContent.toLowerCase();
+                    const description = card.querySelector('.stage-description').textContent.toLowerCase();
+                    
+                    if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+
+            // Filter functionality
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    
+                    // Update active button
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filter cards
+                    stageCards.forEach(card => {
+                        if (filter === 'all' || card.dataset.status === filter) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            // Modal functionality
+            const modal = document.getElementById('createStageModal');
+            const createStageForm = document.getElementById('createStageForm');
+            
+            window.showCreateStageModal = function() {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            };
+            
+            window.closeCreateStageModal = function() {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+                createStageForm.reset();
+            };
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeCreateStageModal();
+                }
+            });
+            
+            // Form submission
+            createStageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                
+                fetch('/stages/create', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                });
+            });
+
+            // Set minimum dates
+            const startDateInput = document.querySelector('input[name="startDate"]');
+            const endDateInput = document.querySelector('input[name="endDate"]');
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.min = today;
+            
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+                if (endDateInput.value && endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+            });
+        });
+
+        // Edit and delete functions
+        function editStage(stageId) {
+            // TODO: Implement edit functionality
+            alert('Chức năng chỉnh sửa sẽ được thêm sau');
+        }
+
+        function deleteStage(stageId) {
+            if (confirm('Bạn có chắc chắn muốn xóa giai đoạn này?')) {
+                fetch(`/api/stages/${stageId}`, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

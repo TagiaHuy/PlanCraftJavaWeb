@@ -2,37 +2,159 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Trang chủ - Mục tiêu cá nhân</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanCraft - Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-<div class="container">
-    <h1>Quản lý mục tiêu cá nhân</h1>
-    <a href="/goals/create" class="btn">+ Tạo mục tiêu mới</a>
-    <table>
-        <thead>
-            <tr>
-                <th>Tên mục tiêu</th>
-                <th>Deadline</th>
-                <th>Lý do</th>
-                <th>Tiến độ</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="goal : ${goals}">
-                <td th:text="${goal.name}"></td>
-                <td th:text="${goal.deadline}"></td>
-                <td th:text="${goal.reason}"></td>
-                <td>
-                    <span th:text="${goal.status}"></span>
-                </td>
-                <td>
-                    <a th:href="@{'/goals/' + ${goal.id}}">Chi tiết</a>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">
+                <i class="fas fa-rocket"></i> PlanCraft
+            </a>
+            <ul class="nav-menu">
+                <li><a href="/dashboard" class="nav-link active">Dashboard</a></li>
+                <li><a href="/goals/create" class="nav-link">Tạo mục tiêu</a></li>
+                <li><a href="/users" class="nav-link">Quản lý</a></li>
+                <li><a href="/logout" class="nav-link">Đăng xuất</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1>Chào mừng trở lại!</h1>
+            <p>Quản lý và theo dõi tiến độ các mục tiêu của bạn một cách hiệu quả</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-content">
+            <div class="content">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-3 mb-8">
+                    <div class="card text-center">
+                        <div class="card-header">
+                            <i class="fas fa-target" style="font-size: 2rem; color: var(--primary-color);"></i>
+                        </div>
+                        <div class="card-title" th:text="${#lists.size(goals)}">0</div>
+                        <div class="card-subtitle">Tổng mục tiêu</div>
+                    </div>
+                    <div class="card text-center">
+                        <div class="card-header">
+                            <i class="fas fa-clock" style="font-size: 2rem; color: var(--accent-color);"></i>
+                        </div>
+                        <div class="card-title" th:text="${#lists.size(goals.?[status == 'IN_PROGRESS'])}">0</div>
+                        <div class="card-subtitle">Đang thực hiện</div>
+                    </div>
+                    <div class="card text-center">
+                        <div class="card-header">
+                            <i class="fas fa-check-circle" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                        </div>
+                        <div class="card-title" th:text="${#lists.size(goals.?[status == 'COMPLETED'])}">0</div>
+                        <div class="card-subtitle">Hoàn thành</div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="flex justify-between items-center mb-6">
+                    <h2 style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--gray-800);">
+                        Mục tiêu của bạn
+                    </h2>
+                    <a href="/goals/create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Tạo mục tiêu mới
+                    </a>
+                </div>
+
+                <!-- Goals List -->
+                <div th:if="${#lists.isEmpty(goals)}" class="text-center">
+                    <div class="card">
+                        <i class="fas fa-inbox" style="font-size: 4rem; color: var(--gray-400); margin-bottom: var(--spacing-4);"></i>
+                        <h3 style="color: var(--gray-600); margin-bottom: var(--spacing-2);">Chưa có mục tiêu nào</h3>
+                        <p style="color: var(--gray-500); margin-bottom: var(--spacing-6);">
+                            Bắt đầu tạo mục tiêu đầu tiên của bạn để bắt đầu hành trình thành công!
+                        </p>
+                        <a href="/goals/create" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Tạo mục tiêu đầu tiên
+                        </a>
+                    </div>
+                </div>
+
+                <div th:if="${!#lists.isEmpty(goals)}" class="grid grid-cols-1">
+                    <div th:each="goal : ${goals}" class="goal-card fade-in" th:onclick="'window.location.href=\'/goals/' + ${goal.id} + '\''">
+                        <div class="goal-header">
+                            <div>
+                                <div class="goal-title" th:text="${goal.name}">Tên mục tiêu</div>
+                                <div class="goal-reason" th:text="${goal.reason}">Lý do</div>
+                            </div>
+                            <div class="goal-deadline" th:text="${#temporals.format(goal.deadline, 'dd/MM/yyyy')}">Deadline</div>
+                        </div>
+                        
+                        <div class="goal-progress">
+                            <div class="flex justify-between items-center mb-2">
+                                <span style="font-size: var(--font-size-sm); color: var(--gray-600);">Tiến độ</span>
+                                <span style="font-size: var(--font-size-sm); font-weight: 500; color: var(--gray-700);" 
+                                      th:text="${goal.status == 'PENDING' ? 'Chưa bắt đầu' : goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Hoàn thành'}">
+                                    Trạng thái
+                                </span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" 
+                                     th:style="'width: ' + ${goal.status == 'PENDING' ? '0' : goal.status == 'IN_PROGRESS' ? '50' : '100'} + '%'">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <div class="goal-status" 
+                                 th:class="${goal.status == 'PENDING' ? 'status-pending' : goal.status == 'IN_PROGRESS' ? 'status-in-progress' : 'status-completed'}">
+                                <i th:class="${goal.status == 'PENDING' ? 'fas fa-clock' : goal.status == 'IN_PROGRESS' ? 'fas fa-play' : 'fas fa-check'}"></i>
+                                <span th:text="${goal.status == 'PENDING' ? 'Chưa bắt đầu' : goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Hoàn thành'}">
+                                    Trạng thái
+                                </span>
+                            </div>
+                            <div class="flex gap-2">
+                                <a th:href="@{'/goals/' + ${goal.id}}" class="btn btn-sm btn-secondary" 
+                                   th:onclick="'event.stopPropagation();'">
+                                    <i class="fas fa-eye"></i>
+                                    Chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add smooth scrolling and animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add fade-in animation to cards
+            const cards = document.querySelectorAll('.goal-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+            
+            // Add hover effects
+            const goalCards = document.querySelectorAll('.goal-card');
+            goalCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
 </body>
 </html> 

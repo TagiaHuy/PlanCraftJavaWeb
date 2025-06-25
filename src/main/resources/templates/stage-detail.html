@@ -2,38 +2,608 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Chi tiết giai đoạn</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanCraft - Chi tiết giai đoạn</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-<div class="container">
-    <h1 th:text="${stage.name}">Tên giai đoạn</h1>
-    <p><b>Thời gian:</b> <span th:text="${stage.startDate}"></span> - <span th:text="${stage.endDate}"></span></p>
-    <p><b>Mô tả:</b> <span th:text="${stage.description}"></span></p>
-    <p><b>Trạng thái:</b> <span th:text="${stage.status}"></span></p>
-    <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn">+ Thêm nhiệm vụ</a>
-    <h2>Danh sách nhiệm vụ</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Tên nhiệm vụ</th>
-                <th>Mô tả</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="task : ${stage.tasks}">
-                <td th:text="${task.name}"></td>
-                <td th:text="${task.description}"></td>
-                <td th:text="${task.status}"></td>
-                <td>
-                    <!-- Có thể thêm nút cập nhật trạng thái hoặc xóa -->
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <p><a th:href="@{'/goals/' + ${stage.goal.id}}">Quay lại mục tiêu</a></p>
-</div>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">
+                <i class="fas fa-rocket"></i> PlanCraft
+            </a>
+            <ul class="nav-menu">
+                <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="/goals/create" class="nav-link">Tạo mục tiêu</a></li>
+                <li><a href="/stages" class="nav-link">Giai đoạn</a></li>
+                <li><a href="/users" class="nav-link">Quản lý</a></li>
+                <li><a href="/logout" class="nav-link">Đăng xuất</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-content">
+            <div class="content">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb">
+                    <a href="/dashboard" class="breadcrumb-item">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                    <i class="fas fa-chevron-right"></i>
+                    <a th:href="@{'/goals/' + ${stage.goal.id}}" class="breadcrumb-item" th:text="${stage.goal.name}">Mục tiêu</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span class="breadcrumb-item active" th:text="${stage.name}">Giai đoạn</span>
+                </div>
+
+                <!-- Stage Header -->
+                <div class="stage-header">
+                    <div class="stage-info">
+                        <div class="stage-status-badge" th:class="${'stage-status-badge ' + stage.status.toLowerCase()}">
+                            <i th:class="${stage.status == 'COMPLETED' ? 'fas fa-check-circle' : 
+                                          stage.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
+                            <span th:text="${stage.status == 'COMPLETED' ? 'Hoàn thành' : 
+                                           stage.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa bắt đầu'}">Trạng thái</span>
+                        </div>
+                        <h1 class="stage-title" th:text="${stage.name}">Tên giai đoạn</h1>
+                        <p class="stage-description" th:text="${stage.description}">Mô tả giai đoạn</p>
+                    </div>
+                    <div class="stage-actions">
+                        <button class="btn btn-secondary" onclick="editStage()">
+                            <i class="fas fa-edit"></i>
+                            Chỉnh sửa
+                        </button>
+                        <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Thêm nhiệm vụ
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Stage Statistics -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 th:text="${#temporals.format(stage.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(stage.endDate, 'dd/MM/yyyy')}">Thời gian</h3>
+                            <p>Thời gian thực hiện</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--secondary-color), #10b981);">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 th:text="${#lists.size(stage.tasks)}">0</h3>
+                            <p>Tổng nhiệm vụ</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color), #f59e0b);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 th:text="${#lists.size(stage.tasks.?[status == 'COMPLETED'])}">0</h3>
+                            <p>Đã hoàn thành</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--gray-500), #6b7280);">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 th:text="${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) + '%' : '0%'}">0%</h3>
+                            <p>Tiến độ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Overview -->
+                <div class="progress-overview">
+                    <div class="progress-header">
+                        <h2><i class="fas fa-chart-line"></i> Tổng quan tiến độ</h2>
+                        <div class="progress-percentage" th:text="${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) + '%' : '0%'}">0%</div>
+                    </div>
+                    <div class="progress-bar-large">
+                        <div class="progress-fill-large" th:style="'width: ' + ${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) : 0} + '%'"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span th:text="${#lists.size(stage.tasks.?[status == 'COMPLETED'])} + ' / ' + ${#lists.size(stage.tasks)} + ' nhiệm vụ hoàn thành'">0 / 0 nhiệm vụ hoàn thành</span>
+                    </div>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="tasks-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-list-check"></i> Danh sách nhiệm vụ</h2>
+                        <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i>
+                            Thêm nhiệm vụ
+                        </a>
+                    </div>
+
+                    <!-- Tasks List -->
+                    <div class="tasks-list" id="tasksList">
+                        <div th:if="${#lists.isEmpty(stage.tasks)}" class="empty-tasks">
+                            <div class="empty-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <h3>Chưa có nhiệm vụ nào</h3>
+                            <p>Tạo nhiệm vụ đầu tiên để bắt đầu thực hiện giai đoạn này</p>
+                            <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Thêm nhiệm vụ đầu tiên
+                            </a>
+                        </div>
+
+                        <div th:each="task : ${stage.tasks}" class="task-item fade-in" th:data-task-id="${task.id}">
+                            <div class="task-checkbox">
+                                <input type="checkbox" th:checked="${task.status == 'COMPLETED'}" 
+                                       th:onchange="'toggleTaskStatus(' + ${task.id} + ', this.checked)'" 
+                                       class="task-checkbox-input">
+                                <div class="checkbox-custom"></div>
+                            </div>
+                            
+                            <div class="task-content">
+                                <div class="task-header">
+                                    <h3 class="task-title" th:text="${task.name}">Tên nhiệm vụ</h3>
+                                    <div class="task-actions">
+                                        <button class="action-btn" th:onclick="'editTask(' + ${task.id} + ')'" title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn" th:onclick="'deleteTask(' + ${task.id} + ')'" title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="task-description" th:text="${task.description}">Mô tả nhiệm vụ</p>
+                                <div class="task-status" th:class="${'task-status ' + task.status.toLowerCase()}">
+                                    <i th:class="${task.status == 'COMPLETED' ? 'fas fa-check-circle' : 
+                                                  task.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
+                                    <span th:text="${task.status == 'COMPLETED' ? 'Hoàn thành' : 
+                                                   task.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa làm'}">Trạng thái</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add animation to task items
+            const taskItems = document.querySelectorAll('.task-item');
+            taskItems.forEach((item, index) => {
+                item.style.animationDelay = (index * 0.1) + 's';
+            });
+
+            // Add hover effects
+            taskItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+
+        // Toggle task status
+        function toggleTaskStatus(taskId, completed) {
+            const status = completed ? 'COMPLETED' : 'NOT_STARTED';
+            
+            fetch(`/api/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: status
+                })
+            }).then(response => {
+                if (response.ok) {
+                    // Update UI
+                    const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
+                    const statusElement = taskItem.querySelector('.task-status');
+                    const statusIcon = statusElement.querySelector('i');
+                    const statusText = statusElement.querySelector('span');
+                    
+                    if (completed) {
+                        statusElement.className = 'task-status completed';
+                        statusIcon.className = 'fas fa-check-circle';
+                        statusText.textContent = 'Hoàn thành';
+                        taskItem.classList.add('completed');
+                    } else {
+                        statusElement.className = 'task-status not-started';
+                        statusIcon.className = 'fas fa-pause-circle';
+                        statusText.textContent = 'Chưa làm';
+                        taskItem.classList.remove('completed');
+                    }
+                    
+                    // Update progress
+                    updateProgress();
+                }
+            });
+        }
+
+        // Update progress
+        function updateProgress() {
+            const totalTasks = document.querySelectorAll('.task-item').length;
+            const completedTasks = document.querySelectorAll('.task-checkbox-input:checked').length;
+            const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            // Update progress bar
+            const progressFill = document.querySelector('.progress-fill-large');
+            progressFill.style.width = percentage + '%';
+            
+            // Update percentage text
+            const percentageText = document.querySelector('.progress-percentage');
+            percentageText.textContent = percentage + '%';
+            
+            // Update stats
+            const progressStats = document.querySelector('.progress-stats span');
+            progressStats.textContent = `${completedTasks} / ${totalTasks} nhiệm vụ hoàn thành`;
+            
+            // Update completed tasks count
+            const completedCount = document.querySelector('.stat-card:nth-child(3) h3');
+            completedCount.textContent = completedTasks;
+        }
+
+        // Edit task
+        function editTask(taskId) {
+            // TODO: Implement edit functionality
+            alert('Chức năng chỉnh sửa nhiệm vụ sẽ được thêm sau');
+        }
+
+        // Delete task
+        function deleteTask(taskId) {
+            if (confirm('Bạn có chắc chắn muốn xóa nhiệm vụ này?')) {
+                fetch(`/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
+                        taskItem.style.animation = 'fadeOut 0.3s ease-out';
+                        setTimeout(() => {
+                            taskItem.remove();
+                            updateProgress();
+                        }, 300);
+                    }
+                });
+            }
+        }
+
+        // Edit stage
+        function editStage() {
+            // TODO: Implement edit functionality
+            alert('Chức năng chỉnh sửa giai đoạn sẽ được thêm sau');
+        }
+    </script>
+
+    <style>
+        /* Additional styles for stage detail page */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            margin-bottom: var(--spacing-6);
+            font-size: var(--font-size-sm);
+        }
+
+        .breadcrumb-item {
+            color: var(--gray-600);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb-item:hover {
+            color: var(--primary-color);
+        }
+
+        .breadcrumb-item.active {
+            color: var(--gray-800);
+            font-weight: 500;
+        }
+
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-8);
+            gap: var(--spacing-6);
+        }
+
+        .stage-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            padding: var(--spacing-2) var(--spacing-3);
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            margin-bottom: var(--spacing-4);
+        }
+
+        .stage-status-badge.completed {
+            background: var(--success-bg);
+            color: var(--success-color);
+        }
+
+        .stage-status-badge.in_progress {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+        }
+
+        .stage-status-badge.not_started {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .stage-title {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .stage-description {
+            color: var(--gray-600);
+            font-size: var(--font-size-lg);
+            line-height: 1.6;
+        }
+
+        .stage-actions {
+            display: flex;
+            gap: var(--spacing-3);
+        }
+
+        .progress-overview {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-8);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-4);
+        }
+
+        .progress-header h2 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .progress-percentage {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .progress-bar-large {
+            height: 12px;
+            background: var(--gray-200);
+            border-radius: var(--border-radius-full);
+            overflow: hidden;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .progress-fill-large {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: var(--border-radius-full);
+            transition: width 0.3s ease;
+        }
+
+        .progress-stats {
+            text-align: center;
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+        }
+
+        .tasks-section {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-6);
+        }
+
+        .section-header h2 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .empty-tasks {
+            text-align: center;
+            padding: var(--spacing-12) var(--spacing-6);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--gray-300);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .empty-tasks h3 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .empty-tasks p {
+            color: var(--gray-600);
+            margin-bottom: var(--spacing-6);
+        }
+
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-4);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-4);
+            padding: var(--spacing-4);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .task-item.completed {
+            background: var(--success-bg);
+            border-color: var(--success-color);
+        }
+
+        .task-checkbox {
+            position: relative;
+            margin-top: 2px;
+        }
+
+        .task-checkbox-input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--border-radius-sm);
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .task-checkbox-input:checked + .checkbox-custom {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .task-checkbox-input:checked + .checkbox-custom::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 4px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-2);
+        }
+
+        .task-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-800);
+            margin: 0;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: var(--spacing-2);
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            padding: var(--spacing-1);
+            border-radius: var(--border-radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .task-description {
+            color: var(--gray-600);
+            margin-bottom: var(--spacing-3);
+            line-height: 1.5;
+        }
+
+        .task-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        .task-status.completed {
+            color: var(--success-color);
+        }
+
+        .task-status.in_progress {
+            color: var(--warning-color);
+        }
+
+        .task-status.not_started {
+            color: var(--gray-500);
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stage-header {
+                flex-direction: column;
+                gap: var(--spacing-4);
+            }
+
+            .stage-actions {
+                width: 100%;
+            }
+
+            .stage-actions .btn {
+                flex: 1;
+            }
+        }
+    </style>
 </body>
 </html> 
