@@ -1,13 +1,16 @@
 package com.example.PlanCraftJavaWeb.controller;
 
 import com.example.PlanCraftJavaWeb.entity.Task;
+import com.example.PlanCraftJavaWeb.entity.Stage;
 import com.example.PlanCraftJavaWeb.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -42,10 +45,20 @@ public class TaskRestController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Task> updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<Map<String, Object>> updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
         Task task = taskService.getTaskById(id).orElseThrow();
         task.setStatus(status);
         Task updatedTask = taskService.saveTask(task);
-        return ResponseEntity.ok(updatedTask);
+        
+        // Lấy stage để lấy progress mới nhất
+        Stage stage = updatedTask.getStage();
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", updatedTask.getId());
+        response.put("name", updatedTask.getName());
+        response.put("description", updatedTask.getDescription());
+        response.put("status", updatedTask.getStatus());
+        response.put("stageProgress", stage != null ? stage.getProgressPercentage() : 0.0);
+        
+        return ResponseEntity.ok(response);
     }
 } 

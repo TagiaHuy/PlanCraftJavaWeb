@@ -28,4 +28,33 @@ public class StageService {
     public void deleteStage(Long id) {
         stageRepository.deleteById(id);
     }
+
+    public void updateStageProgress(Long stageId) {
+        Optional<Stage> stageOpt = stageRepository.findById(stageId);
+        if (stageOpt.isPresent()) {
+            Stage stage = stageOpt.get();
+            
+            // Tính toán progress từ tasks
+            long totalTasks = stage.getTasks() != null ? stage.getTasks().size() : 0;
+            long completedTasks = stage.getTasks() != null ? 
+                stage.getTasks().stream()
+                    .filter(t -> "COMPLETED".equalsIgnoreCase(t.getStatus()))
+                    .count() : 0;
+            
+            // Cập nhật progress percentage
+            double progressPercentage = totalTasks > 0 ? (double) completedTasks / totalTasks * 100 : 0.0;
+            stage.setProgressPercentage(Math.round(progressPercentage * 100.0) / 100.0);
+            
+            // Cập nhật trạng thái
+            if (totalTasks > 0 && completedTasks == totalTasks) {
+                stage.setStatus("COMPLETED");
+            } else if (completedTasks > 0) {
+                stage.setStatus("IN_PROGRESS");
+            } else {
+                stage.setStatus("NOT_STARTED");
+            }
+            
+            stageRepository.save(stage);
+        }
+    }
 } 

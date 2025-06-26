@@ -20,6 +20,7 @@ public class Stage {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
+    private Double progressPercentage = 0.0;
 
     @OneToMany(mappedBy = "stage", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tasks;
@@ -39,6 +40,8 @@ public class Stage {
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Double getProgressPercentage() { return progressPercentage; }
+    public void setProgressPercentage(Double progressPercentage) { this.progressPercentage = progressPercentage; }
     public List<Task> getTasks() { return tasks; }
     public void setTasks(List<Task> tasks) { this.tasks = tasks; }
 } 

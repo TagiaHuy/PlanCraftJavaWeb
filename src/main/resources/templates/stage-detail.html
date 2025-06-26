@@ -104,7 +104,7 @@
                             <i class="fas fa-percentage"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 th:text="${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) + '%' : '0%'}">0%</h3>
+                            <h3 th:text="${stage.progressPercentage != null ? #numbers.formatDecimal(stage.progressPercentage, 1, 1) + '%' : '0%'}">0%</h3>
                             <p>Tiến độ</p>
                         </div>
                     </div>
@@ -114,10 +114,10 @@
                 <div class="progress-overview">
                     <div class="progress-header">
                         <h2><i class="fas fa-chart-line"></i> Tổng quan tiến độ</h2>
-                        <div class="progress-percentage" th:text="${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) + '%' : '0%'}">0%</div>
+                        <div class="progress-percentage" th:text="${stage.progressPercentage != null ? #numbers.formatDecimal(stage.progressPercentage, 1, 1) + '%' : '0%'}">0%</div>
                     </div>
                     <div class="progress-bar-large">
-                        <div class="progress-fill-large" th:style="'width: ' + ${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) : 0} + '%'"></div>
+                        <div class="progress-fill-large" th:style="'width: ' + ${stage.progressPercentage != null ? stage.progressPercentage : 0} + '%'"></div>
                     </div>
                     <div class="progress-stats">
                         <span th:text="${#lists.size(stage.tasks.?[status == 'COMPLETED'])} + ' / ' + ${#lists.size(stage.tasks)} + ' nhiệm vụ hoàn thành'">0 / 0 nhiệm vụ hoàn thành</span>
@@ -305,8 +305,8 @@
                     showToast('Nhiệm vụ đã được đánh dấu chưa hoàn thành', 'info');
                 }
                 
-                // Update progress statistics
-                updateProgress();
+                // Update progress statistics using data from database
+                updateProgressFromDatabase(updatedTask.stageProgress);
                 
                 // Re-enable checkbox
                 checkbox.disabled = false;
@@ -322,7 +322,50 @@
             });
         }
 
-        // Update progress statistics
+        // Update progress statistics using data from database
+        function updateProgressFromDatabase(progressPercentage) {
+            const progressPercentageRounded = Math.round(progressPercentage);
+            
+            // Update progress bar
+            const progressFill = document.querySelector('.progress-fill-large');
+            if (progressFill) {
+                progressFill.style.width = progressPercentageRounded + '%';
+            }
+            
+            // Update progress percentage
+            const progressPercentageElement = document.querySelector('.progress-percentage');
+            if (progressPercentageElement) {
+                progressPercentageElement.textContent = progressPercentageRounded + '%';
+            }
+            
+            // Update progress stats (calculate from DOM since we don't have total/completed counts)
+            const taskItems = document.querySelectorAll('.task-item');
+            const totalTasks = taskItems.length;
+            const completedTasks = document.querySelectorAll('.task-item.completed').length;
+            
+            const progressStats = document.querySelector('.progress-stats');
+            if (progressStats) {
+                progressStats.textContent = `${completedTasks} / ${totalTasks} nhiệm vụ hoàn thành`;
+            }
+            
+            // Update statistics cards
+            const totalTasksCard = document.querySelector('.stat-card:nth-child(2) h3');
+            if (totalTasksCard) {
+                totalTasksCard.textContent = totalTasks;
+            }
+            
+            const completedTasksCard = document.querySelector('.stat-card:nth-child(3) h3');
+            if (completedTasksCard) {
+                completedTasksCard.textContent = completedTasks;
+            }
+            
+            const progressCard = document.querySelector('.stat-card:nth-child(4) h3');
+            if (progressCard) {
+                progressCard.textContent = progressPercentageRounded + '%';
+            }
+        }
+
+        // Update progress statistics (legacy function for initial load)
         function updateProgress() {
             const taskItems = document.querySelectorAll('.task-item');
             const totalTasks = taskItems.length;

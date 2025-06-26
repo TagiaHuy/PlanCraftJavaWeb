@@ -16,6 +16,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -36,8 +38,48 @@ public class DashboardController {
         String username = authentication.getName();
         User user = userService.findByUsername(username);
         Long userId = user.getId();
-        model.addAttribute("goals", goalService.getGoalsByUserId(userId));
+        
+        List<Goal> goals = goalService.getGoalsByUserId(userId);
+        
+        // Tính toán thống kê tổng thể
+        long totalTasks = goals.stream()
+                .mapToLong(goal -> goal.getTotalTasks())
+                .sum();
+        
+        long completedTasks = goals.stream()
+                .mapToLong(goal -> goal.getCompletedTasks())
+                .sum();
+        
+        double overallProgress = totalTasks > 0 ? (double) completedTasks / totalTasks * 100 : 0.0;
+        
+        model.addAttribute("goals", goals);
+        model.addAttribute("totalTasks", totalTasks);
+        model.addAttribute("completedTasks", completedTasks);
+        model.addAttribute("overallProgress", overallProgress);
+        
         return "dashboard";
+    }
+
+    // Trang danh sách tất cả stages
+    @GetMapping("/stages")
+    public String stagesList(Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userService.findByUsername(username);
+        Long userId = user.getId();
+        
+        // Lấy tất cả goals của user để lấy stages
+        List<Goal> goals = goalService.getGoalsByUserId(userId);
+        List<Stage> allStages = new ArrayList<>();
+        for (Goal goal : goals) {
+            if (goal.getStages() != null) {
+                allStages.addAll(goal.getStages());
+            }
+        }
+        
+        model.addAttribute("stages", allStages);
+        model.addAttribute("goals", goals);
+        return "stages";
     }
 
     // Trang tạo mục tiêu mới
@@ -95,7 +137,8 @@ public class DashboardController {
         stage.setDescription(description);
         stage.setStartDate(LocalDate.parse(startDate));
         stage.setEndDate(LocalDate.parse(endDate));
-        stage.setStatus("chưa bắt đầu");
+        stage.setStatus("NOT_STARTED");
+        stage.setProgressPercentage(0.0);
         stageService.saveStage(stage);
         return "redirect:/goals/" + goalId;
     }

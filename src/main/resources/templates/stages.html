@@ -158,10 +158,10 @@
                             <div class="stage-progress">
                                 <div class="progress-info">
                                     <span>Tiến độ</span>
-                                    <span th:text="${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) + '%' : '0%'}">0%</span>
+                                    <span th:text="${stage.progressPercentage != null ? #numbers.formatDecimal(stage.progressPercentage, 1, 1) + '%' : '0%'}">0%</span>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" th:style="'width: ' + ${#lists.size(stage.tasks) > 0 ? (#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100 / #lists.size(stage.tasks)) : 0} + '%'"></div>
+                                    <div class="progress-fill" th:style="'width: ' + ${stage.progressPercentage != null ? stage.progressPercentage : 0} + '%'"></div>
                                 </div>
                             </div>
                         </div>

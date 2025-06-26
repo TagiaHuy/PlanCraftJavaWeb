@@ -45,7 +45,7 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
-                            <i class="fas fa-target"></i>
+                            <i class="fas fa-bullseye"></i>
                         </div>
                         <div class="stat-content">
                             <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals)}">0</h3>
@@ -53,12 +53,13 @@
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color), #f59e0b);">
-                            <i class="fas fa-clock"></i>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--info-color), #3b82f6);">
+                            <i class="fas fa-tasks"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals.?[status == 'IN_PROGRESS'])}">0</h3>
-                            <p style="color: var(--gray-600);">Đang thực hiện</p>
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" 
+                                th:text="${totalTasks}">0</h3>
+                            <p style="color: var(--gray-600);">Tổng nhiệm vụ</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -66,17 +67,19 @@
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals.?[status == 'COMPLETED'])}">0</h3>
-                            <p style="color: var(--gray-600);">Hoàn thành</p>
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" 
+                                th:text="${completedTasks}">0</h3>
+                            <p style="color: var(--gray-600);">Nhiệm vụ hoàn thành</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon" style="background: linear-gradient(135deg, var(--gray-500), #6b7280);">
-                            <i class="fas fa-pause-circle"></i>
+                            <i class="fas fa-percentage"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" th:text="${#lists.size(goals.?[status == 'NOT_STARTED'])}">0</h3>
-                            <p style="color: var(--gray-600);">Chưa bắt đầu</p>
+                            <h3 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--gray-800);" 
+                                th:text="${#numbers.formatDecimal(overallProgress, 1, 1)} + '%'">0%</h3>
+                            <p style="color: var(--gray-600);">Tiến độ tổng thể</p>
                         </div>
                     </div>
                 </div>
@@ -160,16 +163,20 @@
                                     <i class="fas fa-layer-group"></i>
                                     <span th:text="${#lists.size(goal.stages)} + ' giai đoạn'">Giai đoạn</span>
                                 </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-tasks"></i>
+                                    <span th:text="${goal.totalTasks} + ' nhiệm vụ'">Nhiệm vụ</span>
+                                </div>
                             </div>
                             
                             <div class="goal-progress">
                                 <div class="progress-info">
                                     <span>Tiến độ</span>
-                                    <span th:text="${goal.status == 'COMPLETED' ? '100%' : goal.status == 'IN_PROGRESS' ? '50%' : '0%'}">0%</span>
+                                    <span th:text="${#numbers.formatDecimal(goal.taskProgressPercentage, 1, 1)} + '%'">0%</span>
                                 </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" 
-                                         th:style="'width: ' + ${goal.status == 'COMPLETED' ? '100' : goal.status == 'IN_PROGRESS' ? '50' : '0'} + '%'">
+                                         th:style="'width: ' + ${goal.taskProgressPercentage} + '%'">
                                     </div>
                                 </div>
                             </div>

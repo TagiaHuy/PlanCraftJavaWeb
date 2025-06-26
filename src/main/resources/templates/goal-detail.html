@@ -61,11 +61,11 @@
                         </div>
                         <div class="progress-bar progress-bar-animated" style="height: 18px; background: var(--gray-200); position: relative;">
                             <div class="progress-fill" 
-                                 th:with="total=${#lists.size(goal.stages)}, done=${#lists.size(goal.stages.?[status == 'hoàn thành'])}, percent=${total > 0 ? (done * 100 / total) : 0}"
+                                 th:with="percent=${goal.taskProgressPercentage}"
                                  th:style="'width: ' + ${percent} + '%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); height: 100%; border-radius: 8px; transition: width 0.5s;'">
                             </div>
-                            <span class="progress-label" th:with="total=${#lists.size(goal.stages)}, done=${#lists.size(goal.stages.?[status == 'hoàn thành'])}, percent=${total > 0 ? (done * 100 / total) : 0}"
-                                  th:text="${percent} + '%'"
+                            <span class="progress-label" th:with="percent=${goal.taskProgressPercentage}"
+                                  th:text="${#numbers.formatDecimal(percent, 1, 1)} + '%'"
                                   style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">
                                 0%
                             </span>
@@ -110,7 +110,7 @@
                         <div class="card-header">
                             <h3 class="card-title">
                                 <i class="fas fa-chart-pie" style="color: var(--secondary-color); margin-right: var(--spacing-2);"></i>
-                                Thống kê giai đoạn
+                                Thống kê tổng quan
                             </h3>
                         </div>
                         <div class="space-y-3">
@@ -119,14 +119,14 @@
                                 <span style="font-weight: 500; color: var(--gray-800);" th:text="${#lists.size(goal.stages)}">0</span>
                             </div>
                             <div class="flex justify-between">
-                                <span style="color: var(--gray-600);">Đã hoàn thành:</span>
-                                <span style="font-weight: 500; color: var(--secondary-color);" 
-                                      th:text="${#lists.size(goal.stages.?[status == 'COMPLETED'])}">0</span>
+                                <span style="color: var(--gray-600);">Tổng nhiệm vụ:</span>
+                                <span style="font-weight: 500; color: var(--gray-800);" 
+                                      th:text="${goal.totalTasks}">0</span>
                             </div>
                             <div class="flex justify-between">
-                                <span style="color: var(--gray-600);">Đang thực hiện:</span>
-                                <span style="font-weight: 500; color: var(--accent-color);" 
-                                      th:text="${#lists.size(goal.stages.?[status == 'IN_PROGRESS'])}">0</span>
+                                <span style="color: var(--gray-600);">Nhiệm vụ hoàn thành:</span>
+                                <span style="font-weight: 500; color: var(--secondary-color);" 
+                                      th:text="${goal.completedTasks}">0</span>
                             </div>
                         </div>
                     </div>
@@ -192,11 +192,11 @@
                                     <td>
                                         <div class="progress-bar progress-bar-animated" style="width: 100px; height: 12px; background: var(--gray-200); position: relative;">
                                             <div class="progress-fill"
-                                                 th:with="total=${#lists.size(stage.tasks)}, done=${#lists.size(stage.tasks.?[status == 'hoàn thành'])}, percent=${total > 0 ? (done * 100 / total) : 0}"
+                                                 th:with="percent=${stage.progressPercentage != null ? stage.progressPercentage : 0}"
                                                  th:style="'width: ' + ${percent} + '%; background: linear-gradient(90deg, var(--primary-color), var(--accent-color)); height: 100%; border-radius: 6px; transition: width 0.5s;'">
                                             </div>
-                                            <span class="progress-label" th:with="total=${#lists.size(stage.tasks)}, done=${#lists.size(stage.tasks.?[status == 'hoàn thành'])}, percent=${total > 0 ? (done * 100 / total) : 0}"
-                                                  th:text="${percent} + '%'"
+                                            <span class="progress-label" th:with="percent=${stage.progressPercentage != null ? stage.progressPercentage : 0}"
+                                                  th:text="${#numbers.formatDecimal(percent, 1, 1)} + '%'"
                                                   style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 0.85em; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">
                                                 0%
                                             </span>
