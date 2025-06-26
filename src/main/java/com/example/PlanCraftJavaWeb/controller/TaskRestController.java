@@ -42,10 +42,10 @@ public class TaskRestController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<Task> updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
         Task task = taskService.getTaskById(id).orElseThrow();
         task.setStatus(status);
-        taskService.saveTask(task);
-        return ResponseEntity.ok().build();
+        Task updatedTask = taskService.saveTask(task);
+        return ResponseEntity.ok(updatedTask);
     }
 } 

@@ -128,10 +128,16 @@
                 <div class="tasks-section">
                     <div class="section-header">
                         <h2><i class="fas fa-list-check"></i> Danh sách nhiệm vụ</h2>
-                        <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i>
-                            Thêm nhiệm vụ
-                        </a>
+                        <div class="section-actions">
+                            <div class="task-hint">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Click vào nhiệm vụ để thay đổi trạng thái</span>
+                            </div>
+                            <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i>
+                                Thêm nhiệm vụ
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Tasks List -->
@@ -148,11 +154,13 @@
                             </a>
                         </div>
 
-                        <div th:each="task : ${stage.tasks}" class="task-item fade-in" th:data-task-id="${task.id}">
+                        <div th:each="task : ${stage.tasks}" class="task-item fade-in" th:data-task-id="${task.id}" 
+                             title="Click để thay đổi trạng thái nhiệm vụ">
                             <div class="task-checkbox">
                                 <input type="checkbox" th:checked="${task.status == 'COMPLETED'}" 
                                        th:onchange="'toggleTaskStatus(' + ${task.id} + ', this.checked)'" 
-                                       class="task-checkbox-input">
+                                       class="task-checkbox-input"
+                                       title="Click để thay đổi trạng thái nhiệm vụ">
                                 <div class="checkbox-custom"></div>
                             </div>
                             
@@ -201,13 +209,53 @@
                     this.style.transform = 'translateY(0)';
                 });
             });
+
+            // Add click event to task items for toggle functionality
+            taskItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on action buttons or links
+                    if (e.target.closest('.task-actions') || 
+                        e.target.closest('a') || 
+                        e.target.closest('button') ||
+                        e.target.closest('.task-checkbox')) {
+                        return;
+                    }
+                    
+                    const taskId = this.getAttribute('data-task-id');
+                    const checkbox = this.querySelector('.task-checkbox-input');
+                    const newCheckedState = !checkbox.checked;
+                    
+                    // Trigger the toggle function
+                    toggleTaskStatus(taskId, newCheckedState);
+                });
+            });
         });
 
         // Toggle task status (AJAX)
         window.toggleTaskStatus = function(taskId, checked) {
-            const status = checked ? 'hoàn thành' : 'chưa làm';
+            const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
+            const isCurrentlyCompleted = taskItem.classList.contains('completed');
+            const checkbox = taskItem.querySelector('.task-checkbox-input');
+            
+            // Update checkbox state immediately for better UX
+            checkbox.checked = checked;
+            
+            // If unchecking a completed task, ask for confirmation
+            if (isCurrentlyCompleted && !checked) {
+                if (!confirm('Bạn có chắc chắn muốn đánh dấu nhiệm vụ này là chưa hoàn thành?')) {
+                    // Revert checkbox state
+                    checkbox.checked = true;
+                    return;
+                }
+            }
+            
+            const status = checked ? 'COMPLETED' : 'NOT_STARTED';
             const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
             const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+            
+            // Show loading state
+            checkbox.disabled = true;
+            
             fetch(`/api/tasks/${taskId}/status?status=${encodeURIComponent(status)}`, {
                 method: 'PATCH',
                 headers: {
@@ -217,9 +265,134 @@
             })
             .then(res => {
                 if (res.ok) {
-                    window.location.reload();
+                    return res.json();
                 }
+                throw new Error('Network response was not ok');
+            })
+            .then(updatedTask => {
+                // Update task item appearance
+                const taskStatus = taskItem.querySelector('.task-status');
+                const taskStatusIcon = taskStatus.querySelector('i');
+                const taskStatusText = taskStatus.querySelector('span');
+                
+                if (updatedTask.status === 'COMPLETED') {
+                    taskItem.classList.add('completed');
+                    taskStatusIcon.className = 'fas fa-check-circle';
+                    taskStatusText.textContent = 'Hoàn thành';
+                    taskStatus.className = 'task-status completed';
+                    
+                    // Add success animation
+                    taskItem.style.animation = 'taskCompleted 0.5s ease-out';
+                    setTimeout(() => {
+                        taskItem.style.animation = '';
+                    }, 500);
+                    
+                    // Show success message
+                    showToast('Nhiệm vụ đã được đánh dấu hoàn thành!', 'success');
+                } else {
+                    taskItem.classList.remove('completed');
+                    taskStatusIcon.className = 'fas fa-pause-circle';
+                    taskStatusText.textContent = 'Chưa làm';
+                    taskStatus.className = 'task-status not_started';
+                    
+                    // Add uncheck animation
+                    taskItem.style.animation = 'taskUnchecked 0.3s ease-out';
+                    setTimeout(() => {
+                        taskItem.style.animation = '';
+                    }, 300);
+                    
+                    // Show info message
+                    showToast('Nhiệm vụ đã được đánh dấu chưa hoàn thành', 'info');
+                }
+                
+                // Update progress statistics
+                updateProgress();
+                
+                // Re-enable checkbox
+                checkbox.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error updating task status:', error);
+                // Revert checkbox state if update failed
+                checkbox.checked = !checked;
+                checkbox.disabled = false;
+                
+                // Show error message
+                showToast('Có lỗi xảy ra khi cập nhật trạng thái nhiệm vụ. Vui lòng thử lại.', 'error');
             });
+        }
+
+        // Update progress statistics
+        function updateProgress() {
+            const taskItems = document.querySelectorAll('.task-item');
+            const totalTasks = taskItems.length;
+            const completedTasks = document.querySelectorAll('.task-item.completed').length;
+            const progressPercentage = totalTasks > 0 ? Math.round((completedTasks * 100) / totalTasks) : 0;
+            
+            // Update progress bar
+            const progressFill = document.querySelector('.progress-fill-large');
+            if (progressFill) {
+                progressFill.style.width = progressPercentage + '%';
+            }
+            
+            // Update progress percentage
+            const progressPercentageElement = document.querySelector('.progress-percentage');
+            if (progressPercentageElement) {
+                progressPercentageElement.textContent = progressPercentage + '%';
+            }
+            
+            // Update progress stats
+            const progressStats = document.querySelector('.progress-stats');
+            if (progressStats) {
+                progressStats.textContent = `${completedTasks} / ${totalTasks} nhiệm vụ hoàn thành`;
+            }
+            
+            // Update statistics cards
+            const totalTasksCard = document.querySelector('.stat-card:nth-child(2) h3');
+            if (totalTasksCard) {
+                totalTasksCard.textContent = totalTasks;
+            }
+            
+            const completedTasksCard = document.querySelector('.stat-card:nth-child(3) h3');
+            if (completedTasksCard) {
+                completedTasksCard.textContent = completedTasks;
+            }
+            
+            const progressCard = document.querySelector('.stat-card:nth-child(4) h3');
+            if (progressCard) {
+                progressCard.textContent = progressPercentage + '%';
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            // Remove existing toast
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
         }
 
         // Edit task
@@ -355,6 +528,7 @@
             font-size: var(--font-size-2xl);
             font-weight: 700;
             color: var(--primary-color);
+            transition: all 0.3s ease;
         }
 
         .progress-bar-large {
@@ -369,13 +543,14 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
             border-radius: var(--border-radius-full);
-            transition: width 0.3s ease;
+            transition: width 0.5s ease;
         }
 
         .progress-stats {
             text-align: center;
             color: var(--gray-600);
             font-size: var(--font-size-sm);
+            transition: all 0.3s ease;
         }
 
         .tasks-section {
@@ -396,6 +571,27 @@
             font-size: var(--font-size-xl);
             font-weight: 600;
             color: var(--gray-800);
+        }
+
+        .section-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-4);
+        }
+
+        .task-hint {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            padding: var(--spacing-2) var(--spacing-3);
+            background: var(--gray-50);
+            border-radius: var(--border-radius-md);
+        }
+
+        .task-hint i {
+            color: var(--primary-color);
         }
 
         .empty-tasks {
@@ -435,17 +631,83 @@
             border: 1px solid var(--gray-200);
             border-radius: var(--border-radius-lg);
             background: white;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
         }
 
-        .task-item:hover {
+        .task-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: var(--border-radius-lg);
+            background: transparent;
+            transition: background-color 0.2s ease;
+            pointer-events: none;
+        }
+
+        .task-item:hover::before {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .task-item:not(.completed):hover {
             border-color: var(--primary-color);
             box-shadow: var(--shadow-md);
+        }
+
+        .task-item.completed:hover {
+            border-color: var(--success-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Prevent cursor pointer on action buttons */
+        .task-item .task-actions {
+            cursor: default;
+        }
+
+        .task-item .task-actions button {
+            cursor: pointer;
+        }
+
+        .task-item .task-checkbox {
+            cursor: pointer;
+        }
+
+        /* Active state when clicking */
+        .task-item:active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease;
+        }
+
+        /* Disable active state when disabled */
+        .task-item:has(.task-checkbox-input:disabled):active {
+            transform: none;
         }
 
         .task-item.completed {
             background: var(--success-bg);
             border-color: var(--success-color);
+        }
+
+        .task-item.completed .task-title {
+            color: var(--gray-600);
+            text-decoration: line-through;
+        }
+
+        .task-item.completed .task-description {
+            color: var(--gray-500);
+        }
+
+        .task-item.completed .action-btn {
+            opacity: 0.7;
+        }
+
+        .task-item.completed .action-btn:hover {
+            opacity: 1;
         }
 
         .task-checkbox {
@@ -465,12 +727,13 @@
             border: 2px solid var(--gray-300);
             border-radius: var(--border-radius-sm);
             background: white;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .task-checkbox-input:checked + .checkbox-custom {
             background: var(--primary-color);
             border-color: var(--primary-color);
+            transition: all 0.3s ease;
         }
 
         .task-checkbox-input:checked + .checkbox-custom::after {
@@ -481,6 +744,16 @@
             color: white;
             font-size: 12px;
             font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .task-checkbox-input:disabled + .checkbox-custom {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .task-checkbox-input:disabled {
+            cursor: not-allowed;
         }
 
         .task-content {
@@ -499,6 +772,7 @@
             font-weight: 600;
             color: var(--gray-800);
             margin: 0;
+            transition: all 0.3s ease;
         }
 
         .task-actions {
@@ -525,6 +799,7 @@
             color: var(--gray-600);
             margin-bottom: var(--spacing-3);
             line-height: 1.5;
+            transition: all 0.3s ease;
         }
 
         .task-status {
@@ -533,6 +808,7 @@
             gap: var(--spacing-1);
             font-size: var(--font-size-sm);
             font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .task-status.completed {
@@ -554,6 +830,33 @@
             }
         }
 
+        @keyframes taskCompleted {
+            0% {
+                transform: scale(1);
+                box-shadow: var(--shadow-sm);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: var(--shadow-lg);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: var(--shadow-sm);
+            }
+        }
+
+        @keyframes taskUnchecked {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.98);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         @media (max-width: 768px) {
             .stage-header {
                 flex-direction: column;
@@ -567,6 +870,75 @@
             .stage-actions .btn {
                 flex: 1;
             }
+
+            .section-actions {
+                flex-direction: column;
+                gap: var(--spacing-3);
+                align-items: stretch;
+            }
+
+            .task-hint {
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
+        .stat-content h3 {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: var(--spacing-1);
+            transition: all 0.3s ease;
+        }
+
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-4);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-3);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            min-width: 300px;
+        }
+
+        .toast-notification.show {
+            transform: translateX(0);
+        }
+
+        .toast-notification i {
+            font-size: var(--font-size-lg);
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast-success i {
+            color: var(--success-color);
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--error-color);
+        }
+
+        .toast-error i {
+            color: var(--error-color);
+        }
+
+        .toast-info {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .toast-info i {
+            color: var(--primary-color);
         }
     </style>
 </body>

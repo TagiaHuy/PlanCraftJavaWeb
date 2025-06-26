@@ -1,9 +1,12 @@
 package com.example.PlanCraftJavaWeb.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "tasks")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -11,6 +14,7 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stage_id")
+    @JsonIgnore
     private Stage stage;
 
     private String name;
