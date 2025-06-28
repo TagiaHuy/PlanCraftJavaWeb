@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- Google Drive API -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -73,39 +77,53 @@
                 <!-- Stage Statistics -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
-                            <i class="fas fa-calendar"></i>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                            <i class="fas fa-calendar-alt"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 th:text="${#temporals.format(stage.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(stage.endDate, 'dd/MM/yyyy')}">Thời gian</h3>
+                            <h3 th:text="${#temporals.format(stage.startDate, 'dd/MM')} + ' - ' + ${#temporals.format(stage.endDate, 'dd/MM/yyyy')}">Thời gian</h3>
                             <p>Thời gian thực hiện</p>
+                            <div class="stat-detail">
+                                <span th:text="${#temporals.format(stage.startDate, 'dd/MM')} + ' - ' + ${#temporals.format(stage.endDate, 'dd/MM/yyyy')}">Thời gian</span>
+                            </div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--secondary-color), #10b981);">
-                            <i class="fas fa-tasks"></i>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                            <i class="fas fa-list-check"></i>
                         </div>
                         <div class="stat-content">
                             <h3 th:text="${#lists.size(stage.tasks)}">0</h3>
                             <p>Tổng nhiệm vụ</p>
+                            <div class="stat-detail">
+                                <span th:text="${#lists.size(stage.tasks.?[status == 'IN_PROGRESS'])} + ' đang làm'">0 đang làm</span>
+                            </div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color), #f59e0b);">
-                            <i class="fas fa-check-circle"></i>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                            <i class="fas fa-check-double"></i>
                         </div>
                         <div class="stat-content">
                             <h3 th:text="${#lists.size(stage.tasks.?[status == 'COMPLETED'])}">0</h3>
                             <p>Đã hoàn thành</p>
+                            <div class="stat-detail">
+                                <span th:if="${#lists.size(stage.tasks) > 0}" 
+                                      th:text="${#numbers.formatDecimal((#lists.size(stage.tasks.?[status == 'COMPLETED']) * 100.0 / #lists.size(stage.tasks)), 1, 1)} + '%'">0%</span>
+                                <span th:if="${#lists.size(stage.tasks) == 0}">0%</span>
+                            </div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, var(--gray-500), #6b7280);">
-                            <i class="fas fa-percentage"></i>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                            <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="stat-content">
                             <h3 th:text="${stage.progressPercentage != null ? #numbers.formatDecimal(stage.progressPercentage, 1, 1) + '%' : '0%'}">0%</h3>
-                            <p>Tiến độ</p>
+                            <p>Tiến độ tổng thể</p>
+                            <div class="stat-detail">
+                                <span th:text="${#lists.size(stage.tasks.?[status == 'NOT_STARTED'])} + ' chưa làm'">0 chưa làm</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -121,6 +139,170 @@
                     </div>
                     <div class="progress-stats">
                         <span th:text="${#lists.size(stage.tasks.?[status == 'COMPLETED'])} + ' / ' + ${#lists.size(stage.tasks)} + ' nhiệm vụ hoàn thành'">0 / 0 nhiệm vụ hoàn thành</span>
+                    </div>
+                </div>
+
+                <!-- Pomodoro Timer -->
+                <div class="pomodoro-section">
+                    <div class="pomodoro-header">
+                        <h2><i class="fas fa-clock"></i> Pomodoro Timer</h2>
+                        <div class="pomodoro-status" id="pomodoroStatus">Sẵn sàng</div>
+                    </div>
+                    
+                    <div class="pomodoro-container">
+                        <div class="pomodoro-timer">
+                            <div class="timer-display" id="timerDisplay">25:00</div>
+                            <div class="timer-label" id="timerLabel">Thời gian làm việc</div>
+                        </div>
+                        
+                        <div class="pomodoro-controls">
+                            <button class="btn btn-primary btn-lg" id="startBtn" onclick="startPomodoro()">
+                                <i class="fas fa-play"></i> Bắt đầu
+                            </button>
+                            <button class="btn btn-secondary btn-lg" id="pauseBtn" onclick="pausePomodoro()" style="display: none;">
+                                <i class="fas fa-pause"></i> Tạm dừng
+                            </button>
+                            <button class="btn btn-danger btn-lg" id="resetBtn" onclick="resetPomodoro()">
+                                <i class="fas fa-redo"></i> Đặt lại
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="soundToggle" onclick="toggleSound()">
+                                <i class="fas fa-volume-up"></i> Tắt âm thanh
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="testSound()">
+                                <i class="fas fa-play"></i> Test âm thanh
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="minimizePomodoro()" id="minimizeBtn">
+                                <i class="fas fa-compress"></i> Thu nhỏ
+                            </button>
+                        </div>
+                        
+                        <div class="pomodoro-settings">
+                            <div class="setting-group">
+                                <label>Thời gian làm việc (phút):</label>
+                                <input type="number" id="workTime" value="25" min="1" max="60" class="setting-input">
+                            </div>
+                            <div class="setting-group">
+                                <label>Thời gian nghỉ ngơi (phút):</label>
+                                <input type="number" id="breakTime" value="5" min="1" max="30" class="setting-input">
+                            </div>
+                            <div class="setting-group">
+                                <label>Chu kỳ dài (phút):</label>
+                                <input type="number" id="longBreakTime" value="15" min="1" max="60" class="setting-input">
+                            </div>
+                        </div>
+
+                        <!-- Custom Audio Settings -->
+                        <div class="audio-settings">
+                            <h3><i class="fas fa-music"></i> Tùy chỉnh âm thanh</h3>
+                            
+                            <!-- Storage Options -->
+                            <div class="storage-options">
+                                <label class="storage-option">
+                                    <input type="radio" name="storageMode" value="local" checked>
+                                    <span class="radio-custom"></span>
+                                    <div class="storage-info">
+                                        <i class="fas fa-hdd"></i>
+                                        <span>LocalStorage (5MB)</span>
+                                    </div>
+                                </label>
+                                <label class="storage-option">
+                                    <input type="radio" name="storageMode" value="google">
+                                    <span class="radio-custom"></span>
+                                    <div class="storage-info">
+                                        <i class="fab fa-google-drive"></i>
+                                        <span>Google Drive (15GB)</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Google Drive Authentication -->
+                            <div class="google-auth-section" id="googleAuthSection" style="display: none;">
+                                <div class="auth-status" id="authStatus">
+                                    <i class="fas fa-user-times"></i>
+                                    <span>Chưa đăng nhập Google Drive</span>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="authenticateGoogleDrive()" id="googleAuthBtn">
+                                    <i class="fab fa-google"></i> Đăng nhập Google Drive
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="signOutGoogleDrive()" id="googleSignOutBtn" style="display: none;">
+                                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                                </button>
+                            </div>
+                            
+                            <div class="audio-options">
+                                <div class="audio-option">
+                                    <label>
+                                        <input type="radio" name="audioMode" value="default" checked>
+                                        <span class="radio-custom"></span>
+                                        Âm thanh mặc định
+                                    </label>
+                                </div>
+                                <div class="audio-option">
+                                    <label>
+                                        <input type="radio" name="audioMode" value="custom">
+                                        <span class="radio-custom"></span>
+                                        Âm thanh tùy chỉnh
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="custom-audio-section" id="customAudioSection" style="display: none;">
+                                <div class="audio-type-selector">
+                                    <label>Loại âm thanh:</label>
+                                    <select id="audioType" class="setting-input">
+                                        <option value="work">Âm thanh làm việc</option>
+                                        <option value="break">Âm thanh nghỉ ngơi</option>
+                                        <option value="universal">Âm thanh cố định (dùng cho cả hai)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="audio-upload-area">
+                                    <div class="upload-zone" id="uploadZone">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>Kéo thả file âm thanh vào đây hoặc <span class="upload-link" onclick="document.getElementById('audioFile').click()">chọn file</span></p>
+                                        <p class="upload-hint" id="uploadHint">Hỗ trợ: MP3, WAV, OGG (tối đa 5MB)</p>
+                                    </div>
+                                    <input type="file" id="audioFile" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">
+                                </div>
+                                
+                                <div class="audio-preview" id="audioPreview" style="display: none;">
+                                    <div class="preview-info">
+                                        <i class="fas fa-music"></i>
+                                        <span id="audioFileName">Tên file</span>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="removeAudio()">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <audio id="audioPreviewPlayer" controls style="width: 100%; margin-top: 10px;"></audio>
+                                </div>
+                                
+                                <div class="audio-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="saveCustomAudio()">
+                                        <i class="fas fa-save"></i> Lưu âm thanh
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" onclick="resetToDefault()">
+                                        <i class="fas fa-undo"></i> Khôi phục mặc định
+                                    </button>
+                                    <button class="btn btn-info btn-sm" onclick="showSavedAudioInfo()">
+                                        <i class="fas fa-info-circle"></i> Xem âm thanh đã lưu
+                                    </button>
+                                    <button class="btn btn-warning btn-sm" onclick="showStorageManagementDialog()" id="storageManageBtn">
+                                        <i class="fas fa-hdd"></i> Quản lý dung lượng
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="pomodoro-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Chu kỳ hoàn thành: <span id="completedCycles">0</span></span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Tổng thời gian: <span id="totalTime">00:00</span></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -191,6 +373,44 @@
         </div>
     </div>
 
+    <!-- Audio Elements for Pomodoro -->
+    <audio id="workCompleteSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
+    <audio id="breakStartSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
+    <audio id="longBreakSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
+
+    <!-- Miniplayer for Pomodoro -->
+    <div class="miniplayer" id="miniplayer" style="display: none;">
+        <div class="miniplayer-content">
+            <div class="miniplayer-info">
+                <div class="miniplayer-title">
+                    <i class="fas fa-clock"></i>
+                    <span id="miniplayerLabel">Pomodoro Timer</span>
+                </div>
+                <div class="miniplayer-time" id="miniplayerTime">25:00</div>
+            </div>
+            <div class="miniplayer-controls">
+                <button class="miniplayer-btn" onclick="toggleMiniplayerPomodoro()" id="miniplayerToggle">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="miniplayer-btn" onclick="resetMiniplayerPomodoro()">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button class="miniplayer-btn" onclick="expandMiniplayer()">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button class="miniplayer-btn" onclick="hideMiniplayer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Add animation to task items
@@ -229,7 +449,107 @@
                     toggleTaskStatus(taskId, newCheckedState);
                 });
             });
+
+            // Pomodoro settings
+            document.getElementById('workTime').addEventListener('change', function() {
+                workTime = parseInt(this.value);
+                if (!isRunning && !isBreak) {
+                    currentTime = workTime * 60;
+                    updateTimerDisplay();
+                }
+            });
+            
+            document.getElementById('breakTime').addEventListener('change', function() {
+                breakTime = parseInt(this.value);
+            });
+            
+            document.getElementById('longBreakTime').addEventListener('change', function() {
+                longBreakTime = parseInt(this.value);
+            });
+
+            // Custom Audio Event Listeners
+            document.querySelectorAll('input[name="audioMode"]').forEach(radio => {
+                radio.addEventListener('change', handleAudioModeChange);
+            });
+
+            document.getElementById('audioType').addEventListener('change', handleAudioTypeChange);
+
+            // Storage Mode Event Listeners
+            document.querySelectorAll('input[name="storageMode"]').forEach(radio => {
+                radio.addEventListener('change', handleStorageModeChange);
+            });
+
+            // Initialize Google Drive API
+            if (typeof gapi !== 'undefined') {
+                initializeGoogleDrive();
+            }
+
+            // Drag and Drop functionality
+            const uploadZone = document.getElementById('uploadZone');
+            
+            uploadZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#3b82f6';
+                this.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+            });
+
+            uploadZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            });
+
+            uploadZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    processAudioFile(files[0]);
+                }
+            });
+
+            // Check for saved audio files on page load
+            checkSavedAudioFiles();
+
+            // Request notification permission for background alerts
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            // Add tab visibility change listener
+            document.addEventListener('visibilitychange', handleTabVisibilityChange);
         });
+
+        function handleStorageModeChange() {
+            currentStorageMode = document.querySelector('input[name="storageMode"]:checked').value;
+            
+            if (currentStorageMode === 'google') {
+                document.getElementById('googleAuthSection').style.display = 'block';
+                document.getElementById('uploadHint').textContent = 'Hỗ trợ: MP3, WAV, OGG (tối đa 100MB)';
+                document.getElementById('storageManageBtn').innerHTML = '<i class="fab fa-google-drive"></i> Quản lý Google Drive';
+            } else {
+                document.getElementById('googleAuthSection').style.display = 'none';
+                document.getElementById('uploadHint').textContent = 'Hỗ trợ: MP3, WAV, OGG (tối đa 5MB)';
+                document.getElementById('storageManageBtn').innerHTML = '<i class="fas fa-hdd"></i> Quản lý dung lượng';
+            }
+        }
+
+        function checkSavedAudioFiles() {
+            const hasWorkAudio = localStorage.getItem('customWorkAudio');
+            const hasBreakAudio = localStorage.getItem('customBreakAudio');
+            const hasUniversalAudio = localStorage.getItem('customUniversalAudio');
+            
+            if (hasWorkAudio || hasBreakAudio || hasUniversalAudio) {
+                let savedCount = 0;
+                if (hasWorkAudio) savedCount++;
+                if (hasBreakAudio) savedCount++;
+                if (hasUniversalAudio) savedCount++;
+                
+                showToast(`Phát hiện ${savedCount} âm thanh tùy chỉnh đã lưu! Chuyển sang chế độ tùy chỉnh để sử dụng.`, 'info');
+            }
+        }
 
         // Toggle task status (AJAX)
         window.toggleTaskStatus = function(taskId, checked) {
@@ -239,15 +559,6 @@
             
             // Update checkbox state immediately for better UX
             checkbox.checked = checked;
-            
-            // If unchecking a completed task, ask for confirmation
-            if (isCurrentlyCompleted && !checked) {
-                if (!confirm('Bạn có chắc chắn muốn đánh dấu nhiệm vụ này là chưa hoàn thành?')) {
-                    // Revert checkbox state
-                    checkbox.checked = true;
-                    return;
-                }
-            }
             
             const status = checked ? 'COMPLETED' : 'NOT_STARTED';
             const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
@@ -466,6 +777,953 @@
         function editStage() {
             // TODO: Implement edit functionality
             alert('Chức năng chỉnh sửa giai đoạn sẽ được thêm sau');
+        }
+
+        // Pomodoro Timer Variables
+        let pomodoroTimer = null;
+        let isRunning = false;
+        let isBreak = false;
+        let currentTime = 25 * 60; // 25 minutes in seconds
+        let workTime = 25;
+        let breakTime = 5;
+        let longBreakTime = 15;
+        let completedCycles = 0;
+        let totalSeconds = 0;
+        let soundEnabled = true;
+        let isMinimized = false;
+        let isTabVisible = true;
+        
+        // Custom Audio Variables
+        let customWorkAudio = null;
+        let customBreakAudio = null;
+        let customUniversalAudio = null;
+        let currentAudioMode = 'default';
+        let selectedAudioType = 'work';
+        let uploadedFile = null;
+        let currentStorageMode = 'local';
+        
+        // Google Drive Variables
+        let googleAuthToken = null;
+        let googleDriveFolderId = null;
+        const GOOGLE_DRIVE_API_KEY = 'AIzaSyAdflseq5gSLVwG5AUkQEQCHbXZDx7UTsk'; // Replace with your API key
+        const GOOGLE_DRIVE_CLIENT_ID = '29528036289-s5u506a1s5bnn7p9vbmlqjgii6a2j2e5.apps.googleusercontent.com'; // Replace with your client ID
+
+        // Sound Functions
+        function playWorkCompleteSound() {
+            if (soundEnabled) {
+                let audio;
+                if (currentAudioMode === 'custom' && customWorkAudio) {
+                    audio = customWorkAudio;
+                } else if (currentAudioMode === 'custom' && customUniversalAudio) {
+                    audio = customUniversalAudio;
+                } else {
+                    audio = document.getElementById('workCompleteSound');
+                }
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
+
+        function playBreakStartSound() {
+            if (soundEnabled) {
+                let audio;
+                if (currentAudioMode === 'custom' && customBreakAudio) {
+                    audio = customBreakAudio;
+                } else if (currentAudioMode === 'custom' && customUniversalAudio) {
+                    audio = customUniversalAudio;
+                } else {
+                    audio = document.getElementById('breakStartSound');
+                }
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
+
+        function playLongBreakSound() {
+            if (soundEnabled) {
+                let audio;
+                if (currentAudioMode === 'custom' && customBreakAudio) {
+                    audio = customBreakAudio;
+                } else if (currentAudioMode === 'custom' && customUniversalAudio) {
+                    audio = customUniversalAudio;
+                } else {
+                    audio = document.getElementById('longBreakSound');
+                }
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const soundBtn = document.getElementById('soundToggle');
+            if (soundEnabled) {
+                soundBtn.innerHTML = '<i class="fas fa-volume-up"></i> Tắt âm thanh';
+                soundBtn.className = 'btn btn-secondary btn-sm';
+                // Play a test sound
+                playWorkCompleteSound();
+            } else {
+                soundBtn.innerHTML = '<i class="fas fa-volume-mute"></i> Bật âm thanh';
+                soundBtn.className = 'btn btn-outline-secondary btn-sm';
+            }
+        }
+
+        function testSound() {
+            if (soundEnabled) {
+                playWorkCompleteSound();
+                showToast('Đang phát âm thanh test!', 'info');
+            } else {
+                showToast('Âm thanh đã bị tắt. Vui lòng bật âm thanh trước.', 'warning');
+            }
+        }
+
+        // Pomodoro Functions
+        function startPomodoro() {
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('pauseBtn').style.display = 'inline-block';
+                document.getElementById('pomodoroStatus').textContent = isBreak ? 'Đang nghỉ ngơi' : 'Đang làm việc';
+                document.querySelector('.pomodoro-timer').classList.add('running');
+                
+                // Update miniplayer if minimized
+                if (isMinimized) {
+                    document.getElementById('miniplayerToggle').innerHTML = '<i class="fas fa-pause"></i>';
+                    document.getElementById('miniplayerLabel').textContent = isBreak ? 'Nghỉ ngơi' : 'Làm việc';
+                }
+                
+                pomodoroTimer = setInterval(() => {
+                    currentTime--;
+                    totalSeconds++;
+                    updateTimerDisplay();
+                    
+                    if (currentTime <= 0) {
+                        if (isBreak) {
+                            // Break finished, start work session
+                            isBreak = false;
+                            currentTime = workTime * 60;
+                            document.getElementById('timerLabel').textContent = 'Thời gian làm việc';
+                            document.getElementById('pomodoroStatus').textContent = 'Đang làm việc';
+                            showToast('Hết giờ nghỉ! Bắt đầu làm việc.', 'info');
+                            playWorkCompleteSound();
+                            playBackgroundSound();
+                            
+                            // Update miniplayer
+                            if (isMinimized) {
+                                document.getElementById('miniplayerLabel').textContent = 'Làm việc';
+                            }
+                        } else {
+                            // Work session finished, start break
+                            isBreak = true;
+                            completedCycles++;
+                            document.getElementById('completedCycles').textContent = completedCycles;
+                            
+                            // Check if it's time for a long break (every 4 cycles)
+                            if (completedCycles % 4 === 0) {
+                                currentTime = longBreakTime * 60;
+                                document.getElementById('timerLabel').textContent = 'Nghỉ ngơi dài';
+                                showToast('Chu kỳ hoàn thành! Nghỉ ngơi dài.', 'success');
+                                playLongBreakSound();
+                                playBackgroundSound();
+                                
+                                // Update miniplayer
+                                if (isMinimized) {
+                                    document.getElementById('miniplayerLabel').textContent = 'Nghỉ ngơi dài';
+                                }
+                            } else {
+                                currentTime = breakTime * 60;
+                                document.getElementById('timerLabel').textContent = 'Thời gian nghỉ ngơi';
+                                showToast('Chu kỳ hoàn thành! Nghỉ ngơi ngắn.', 'success');
+                                playBreakStartSound();
+                                playBackgroundSound();
+                                
+                                // Update miniplayer
+                                if (isMinimized) {
+                                    document.getElementById('miniplayerLabel').textContent = 'Nghỉ ngơi';
+                                }
+                            }
+                            
+                            document.getElementById('pomodoroStatus').textContent = 'Đang nghỉ ngơi';
+                        }
+                        updateTimerDisplay();
+                    }
+                }, 1000);
+            }
+        }
+
+        function pausePomodoro() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(pomodoroTimer);
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseBtn').style.display = 'none';
+                document.getElementById('pomodoroStatus').textContent = 'Đã tạm dừng';
+                document.querySelector('.pomodoro-timer').classList.remove('running');
+                
+                // Update miniplayer if minimized
+                if (isMinimized) {
+                    document.getElementById('miniplayerToggle').innerHTML = '<i class="fas fa-play"></i>';
+                }
+            }
+        }
+
+        function resetPomodoro() {
+            pausePomodoro();
+            isBreak = false;
+            currentTime = workTime * 60;
+            completedCycles = 0;
+            totalSeconds = 0;
+            document.getElementById('completedCycles').textContent = '0';
+            document.getElementById('totalTime').textContent = '00:00';
+            document.getElementById('timerLabel').textContent = 'Thời gian làm việc';
+            document.getElementById('pomodoroStatus').textContent = 'Sẵn sàng';
+            document.querySelector('.pomodoro-timer').classList.remove('running');
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = currentTime % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('timerDisplay').textContent = timeString;
+            
+            // Update miniplayer if minimized
+            if (isMinimized) {
+                document.getElementById('miniplayerTime').textContent = timeString;
+            }
+            
+            // Update total time
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const totalSecs = totalSeconds % 60;
+            document.getElementById('totalTime').textContent = 
+                `${totalMinutes.toString().padStart(2, '0')}:${totalSecs.toString().padStart(2, '0')}`;
+        }
+
+        // Custom Audio Functions
+        function handleAudioModeChange() {
+            const audioMode = document.querySelector('input[name="audioMode"]:checked').value;
+            currentAudioMode = audioMode;
+            
+            if (audioMode === 'custom') {
+                document.getElementById('customAudioSection').style.display = 'block';
+                loadCustomAudios(); // Load saved audios when switching to custom mode
+            } else {
+                document.getElementById('customAudioSection').style.display = 'none';
+            }
+        }
+
+        function handleAudioTypeChange() {
+            selectedAudioType = document.getElementById('audioType').value;
+            // Reset preview when changing type
+            document.getElementById('audioPreview').style.display = 'none';
+            document.getElementById('uploadZone').style.display = 'block';
+            uploadedFile = null;
+        }
+
+        function handleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processAudioFile(file);
+            }
+        }
+
+        function processAudioFile(file) {
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('File quá lớn! Vui lòng chọn file nhỏ hơn 5MB.', 'error');
+                return;
+            }
+
+            // Check file type
+            if (!file.type.startsWith('audio/')) {
+                showToast('Vui lòng chọn file âm thanh hợp lệ!', 'error');
+                return;
+            }
+
+            // Check localStorage quota before processing
+            if (!checkStorageQuota(file.size)) {
+                showToast('Không đủ dung lượng lưu trữ! Vui lòng xóa một số âm thanh cũ hoặc chọn file nhỏ hơn.', 'error');
+                return;
+            }
+
+            uploadedFile = file;
+            
+            // Create audio element for preview
+            const audio = document.createElement('audio');
+            audio.src = URL.createObjectURL(file);
+            audio.controls = true;
+            
+            // Update preview
+            document.getElementById('audioFileName').textContent = file.name;
+            document.getElementById('audioPreviewPlayer').src = URL.createObjectURL(file);
+            document.getElementById('audioPreview').style.display = 'block';
+            document.getElementById('uploadZone').style.display = 'none';
+            
+            showToast('File âm thanh đã được tải lên!', 'success');
+        }
+
+        function checkStorageQuota(fileSize) {
+            try {
+                // Estimate total size needed (base64 encoding increases size by ~33%)
+                const estimatedSize = fileSize * 1.4; // Base64 + JSON overhead
+                
+                // Check current localStorage usage
+                let currentUsage = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        currentUsage += localStorage[key].length;
+                    }
+                }
+                
+                // Check if adding this file would exceed quota (5MB limit)
+                const totalSize = currentUsage + estimatedSize;
+                const maxQuota = 5 * 1024 * 1024; // 5MB
+                
+                if (totalSize > maxQuota) {
+                    return false;
+                }
+                
+                return true;
+            } catch (e) {
+                console.error('Error checking storage quota:', e);
+                return false;
+            }
+        }
+
+        function getStorageUsage() {
+            let usage = 0;
+            let audioFiles = [];
+            
+            try {
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        const size = localStorage[key].length;
+                        usage += size;
+                        
+                        if (key.includes('Audio')) {
+                            try {
+                                const data = JSON.parse(localStorage[key]);
+                                audioFiles.push({
+                                    key: key,
+                                    name: data.name,
+                                    size: data.size,
+                                    storageSize: size
+                                });
+                            } catch (e) {
+                                // Ignore non-JSON items
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error calculating storage usage:', e);
+            }
+            
+            return { totalUsage: usage, audioFiles: audioFiles };
+        }
+
+        function saveCustomAudio() {
+            if (!uploadedFile) {
+                showToast('Vui lòng chọn file âm thanh trước!', 'error');
+                return;
+            }
+
+            // Show loading state
+            const saveBtn = document.querySelector('.audio-actions .btn-primary');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+            saveBtn.disabled = true;
+
+            if (currentStorageMode === 'google') {
+                // Save to Google Drive
+                if (!googleAuthToken) {
+                    showToast('Vui lòng đăng nhập Google Drive trước!', 'error');
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+
+                const fileName = `pomodoro_${selectedAudioType}_${Date.now()}_${uploadedFile.name}`;
+                
+                uploadToGoogleDrive(uploadedFile, fileName)
+                    .then((fileData) => {
+                        // Store file reference in localStorage
+                        const fileReference = {
+                            id: fileData.id,
+                            name: uploadedFile.name,
+                            type: uploadedFile.type,
+                            size: uploadedFile.size,
+                            timestamp: Date.now(),
+                            storage: 'google'
+                        };
+
+                        switch (selectedAudioType) {
+                            case 'work':
+                                localStorage.setItem('customWorkAudio', JSON.stringify(fileReference));
+                                break;
+                            case 'break':
+                                localStorage.setItem('customBreakAudio', JSON.stringify(fileReference));
+                                break;
+                            case 'universal':
+                                localStorage.setItem('customUniversalAudio', JSON.stringify(fileReference));
+                                break;
+                        }
+
+                        showToast(`Âm thanh ${selectedAudioType === 'work' ? 'làm việc' : selectedAudioType === 'break' ? 'nghỉ ngơi' : 'cố định'} đã được lưu lên Google Drive!`, 'success');
+                    })
+                    .catch((error) => {
+                        console.error('Google Drive upload failed:', error);
+                        showToast('Lưu lên Google Drive thất bại. Vui lòng thử lại.', 'error');
+                    })
+                    .finally(() => {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                        
+                        // Reset preview
+                        document.getElementById('audioPreview').style.display = 'none';
+                        document.getElementById('uploadZone').style.display = 'block';
+                        uploadedFile = null;
+                    });
+            } else {
+                // Save to LocalStorage (existing code)
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const base64Audio = e.target.result;
+                        const audioData = {
+                            data: base64Audio,
+                            name: uploadedFile.name,
+                            type: uploadedFile.type,
+                            size: uploadedFile.size,
+                            timestamp: Date.now(),
+                            storage: 'local'
+                        };
+
+                        // Try to save to localStorage
+                        let saveSuccess = false;
+                        switch (selectedAudioType) {
+                            case 'work':
+                                localStorage.setItem('customWorkAudio', JSON.stringify(audioData));
+                                customWorkAudio = new Audio(base64Audio);
+                                saveSuccess = true;
+                                break;
+                            case 'break':
+                                localStorage.setItem('customBreakAudio', JSON.stringify(audioData));
+                                customBreakAudio = new Audio(base64Audio);
+                                saveSuccess = true;
+                                break;
+                            case 'universal':
+                                localStorage.setItem('customUniversalAudio', JSON.stringify(audioData));
+                                customUniversalAudio = new Audio(base64Audio);
+                                saveSuccess = true;
+                                break;
+                        }
+
+                        if (saveSuccess) {
+                            showToast(`Âm thanh ${selectedAudioType === 'work' ? 'làm việc' : selectedAudioType === 'break' ? 'nghỉ ngơi' : 'cố định'} đã được lưu!`, 'success');
+                        }
+
+                    } catch (error) {
+                        console.error('Error saving audio:', error);
+                        if (error.name === 'QuotaExceededError') {
+                            showToast('Không đủ dung lượng lưu trữ! Vui lòng xóa âm thanh cũ hoặc chọn file nhỏ hơn.', 'error');
+                            showStorageManagementDialog();
+                        } else {
+                            showToast('Có lỗi xảy ra khi lưu âm thanh. Vui lòng thử lại.', 'error');
+                        }
+                    } finally {
+                        // Reset button state
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                        
+                        // Reset preview
+                        document.getElementById('audioPreview').style.display = 'none';
+                        document.getElementById('uploadZone').style.display = 'block';
+                        uploadedFile = null;
+                    }
+                };
+                
+                reader.onerror = function() {
+                    showToast('Có lỗi xảy ra khi đọc file âm thanh.', 'error');
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                };
+                
+                reader.readAsDataURL(uploadedFile);
+            }
+        }
+
+        function loadCustomAudios() {
+            // Load work audio
+            const workAudioData = localStorage.getItem('customWorkAudio');
+            if (workAudioData) {
+                try {
+                    const data = JSON.parse(workAudioData);
+                    customWorkAudio = new Audio(data.data);
+                    showToast('Đã tải âm thanh làm việc đã lưu!', 'info');
+                } catch (e) {
+                    console.error('Error loading work audio:', e);
+                    localStorage.removeItem('customWorkAudio');
+                }
+            }
+
+            // Load break audio
+            const breakAudioData = localStorage.getItem('customBreakAudio');
+            if (breakAudioData) {
+                try {
+                    const data = JSON.parse(breakAudioData);
+                    customBreakAudio = new Audio(data.data);
+                    showToast('Đã tải âm thanh nghỉ ngơi đã lưu!', 'info');
+                } catch (e) {
+                    console.error('Error loading break audio:', e);
+                    localStorage.removeItem('customBreakAudio');
+                }
+            }
+
+            // Load universal audio
+            const universalAudioData = localStorage.getItem('customUniversalAudio');
+            if (universalAudioData) {
+                try {
+                    const data = JSON.parse(universalAudioData);
+                    customUniversalAudio = new Audio(data.data);
+                    showToast('Đã tải âm thanh cố định đã lưu!', 'info');
+                } catch (e) {
+                    console.error('Error loading universal audio:', e);
+                    localStorage.removeItem('customUniversalAudio');
+                }
+            }
+        }
+
+        function removeAudio() {
+            document.getElementById('audioPreview').style.display = 'none';
+            document.getElementById('uploadZone').style.display = 'block';
+            uploadedFile = null;
+            document.getElementById('audioFile').value = '';
+        }
+
+        function resetToDefault() {
+            // Clear from memory
+            customWorkAudio = null;
+            customBreakAudio = null;
+            customUniversalAudio = null;
+            currentAudioMode = 'default';
+            
+            // Clear from localStorage
+            localStorage.removeItem('customWorkAudio');
+            localStorage.removeItem('customBreakAudio');
+            localStorage.removeItem('customUniversalAudio');
+            
+            // Reset UI
+            document.querySelector('input[name="audioMode"][value="default"]').checked = true;
+            document.getElementById('customAudioSection').style.display = 'none';
+            document.getElementById('audioPreview').style.display = 'none';
+            document.getElementById('uploadZone').style.display = 'block';
+            uploadedFile = null;
+            document.getElementById('audioFile').value = '';
+            
+            showToast('Đã khôi phục âm thanh mặc định!', 'success');
+        }
+
+        function showSavedAudioInfo() {
+            let info = 'Âm thanh đã lưu:\n';
+            
+            if (localStorage.getItem('customWorkAudio')) {
+                const data = JSON.parse(localStorage.getItem('customWorkAudio'));
+                info += `- Làm việc: ${data.name}\n`;
+            }
+            
+            if (localStorage.getItem('customBreakAudio')) {
+                const data = JSON.parse(localStorage.getItem('customBreakAudio'));
+                info += `- Nghỉ ngơi: ${data.name}\n`;
+            }
+            
+            if (localStorage.getItem('customUniversalAudio')) {
+                const data = JSON.parse(localStorage.getItem('customUniversalAudio'));
+                info += `- Cố định: ${data.name}\n`;
+            }
+            
+            if (info === 'Âm thanh đã lưu:\n') {
+                info = 'Chưa có âm thanh nào được lưu.';
+            }
+            
+            alert(info);
+        }
+
+        function showStorageManagementDialog() {
+            const usage = getStorageUsage();
+            const totalMB = (usage.totalUsage / (1024 * 1024)).toFixed(2);
+            const maxMB = 5;
+            
+            let message = `Dung lượng lưu trữ hiện tại: ${totalMB}MB / ${maxMB}MB\n\n`;
+            message += 'Âm thanh đã lưu:\n';
+            
+            if (usage.audioFiles.length === 0) {
+                message += 'Không có âm thanh nào được lưu.\n';
+            } else {
+                usage.audioFiles.forEach(file => {
+                    const fileMB = (file.storageSize / (1024 * 1024)).toFixed(2);
+                    const type = file.key.includes('Work') ? 'Làm việc' : 
+                                file.key.includes('Break') ? 'Nghỉ ngơi' : 'Cố định';
+                    message += `- ${type}: ${file.name} (${fileMB}MB)\n`;
+                });
+            }
+            
+            message += '\nBạn có muốn xóa một số âm thanh cũ để giải phóng dung lượng?';
+            
+            if (confirm(message)) {
+                showAudioDeletionDialog();
+            }
+        }
+
+        function showAudioDeletionDialog() {
+            const usage = getStorageUsage();
+            
+            if (usage.audioFiles.length === 0) {
+                showToast('Không có âm thanh nào để xóa.', 'info');
+                return;
+            }
+            
+            let message = 'Chọn âm thanh để xóa:\n\n';
+            usage.audioFiles.forEach((file, index) => {
+                const fileMB = (file.storageSize / (1024 * 1024)).toFixed(2);
+                const type = file.key.includes('Work') ? 'Làm việc' : 
+                            file.key.includes('Break') ? 'Nghỉ ngơi' : 'Cố định';
+                message += `${index + 1}. ${type}: ${file.name} (${fileMB}MB)\n`;
+            });
+            
+            message += '\nNhập số thứ tự để xóa (hoặc 0 để hủy):';
+            
+            const choice = prompt(message);
+            if (choice && choice !== '0') {
+                const index = parseInt(choice) - 1;
+                if (index >= 0 && index < usage.audioFiles.length) {
+                    const fileToDelete = usage.audioFiles[index];
+                    deleteAudioFile(fileToDelete.key, fileToDelete.name);
+                } else {
+                    showToast('Lựa chọn không hợp lệ.', 'error');
+                }
+            }
+        }
+
+        function deleteAudioFile(key, fileName) {
+            if (confirm(`Bạn có chắc chắn muốn xóa "${fileName}"?`)) {
+                try {
+                    localStorage.removeItem(key);
+                    
+                    // Clear from memory
+                    switch (key) {
+                        case 'customWorkAudio':
+                            customWorkAudio = null;
+                            break;
+                        case 'customBreakAudio':
+                            customBreakAudio = null;
+                            break;
+                        case 'customUniversalAudio':
+                            customUniversalAudio = null;
+                            break;
+                    }
+                    
+                    showToast(`Đã xóa "${fileName}" thành công!`, 'success');
+                    
+                    // Show updated storage info
+                    const usage = getStorageUsage();
+                    const totalMB = (usage.totalUsage / (1024 * 1024)).toFixed(2);
+                    showToast(`Dung lượng còn lại: ${totalMB}MB / 5MB`, 'info');
+                    
+                } catch (error) {
+                    console.error('Error deleting audio file:', error);
+                    showToast('Có lỗi xảy ra khi xóa file.', 'error');
+                }
+            }
+        }
+
+        function compressAudioFile(file) {
+            return new Promise((resolve, reject) => {
+                // Create a canvas to compress audio (if possible)
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // For now, we'll just return the original file
+                // In a real implementation, you might use Web Audio API to compress
+                resolve(file);
+            });
+        }
+
+        // Google Drive Functions
+        function initializeGoogleDrive() {
+            gapi.load('client:auth2', function() {
+                gapi.client.init({
+                    apiKey: GOOGLE_DRIVE_API_KEY,
+                    clientId: GOOGLE_DRIVE_CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/drive.file'
+                }).then(function() {
+                    // Check if user is already signed in
+                    if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                        handleGoogleAuthSuccess();
+                    }
+                }).catch(function(error) {
+                    console.error('Google Drive initialization failed:', error);
+                });
+            });
+        }
+
+        function authenticateGoogleDrive() {
+            if (!gapi.auth2) {
+                showToast('Google Drive API chưa được khởi tạo. Vui lòng thử lại.', 'error');
+                return;
+            }
+
+            gapi.auth2.getAuthInstance().signIn().then(function(googleUser) {
+                handleGoogleAuthSuccess();
+            }).catch(function(error) {
+                console.error('Google authentication failed:', error);
+                showToast('Đăng nhập Google Drive thất bại. Vui lòng thử lại.', 'error');
+            });
+        }
+
+        function handleGoogleAuthSuccess() {
+            googleAuthToken = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+            
+            // Update UI
+            document.getElementById('authStatus').innerHTML = '<i class="fas fa-user-check"></i><span>Đã đăng nhập Google Drive</span>';
+            document.getElementById('googleAuthBtn').style.display = 'none';
+            document.getElementById('googleSignOutBtn').style.display = 'inline-block';
+            
+            // Create or find Pomodoro folder
+            createPomodoroFolder();
+            
+            showToast('Đăng nhập Google Drive thành công!', 'success');
+        }
+
+        function signOutGoogleDrive() {
+            if (gapi.auth2) {
+                gapi.auth2.getAuthInstance().signOut().then(function() {
+                    googleAuthToken = null;
+                    googleDriveFolderId = null;
+                    
+                    // Update UI
+                    document.getElementById('authStatus').innerHTML = '<i class="fas fa-user-times"></i><span>Chưa đăng nhập Google Drive</span>';
+                    document.getElementById('googleAuthBtn').style.display = 'inline-block';
+                    document.getElementById('googleSignOutBtn').style.display = 'none';
+                    
+                    showToast('Đã đăng xuất Google Drive.', 'info');
+                });
+            }
+        }
+
+        function createPomodoroFolder() {
+            const folderMetadata = {
+                name: 'PlanCraft Pomodoro Audio',
+                mimeType: 'application/vnd.google-apps.folder'
+            };
+
+            gapi.client.drive.files.create({
+                resource: folderMetadata,
+                fields: 'id'
+            }).then(function(response) {
+                googleDriveFolderId = response.result.id;
+                console.log('Pomodoro folder created:', googleDriveFolderId);
+            }).catch(function(error) {
+                console.error('Error creating folder:', error);
+                // Try to find existing folder
+                findPomodoroFolder();
+            });
+        }
+
+        function findPomodoroFolder() {
+            gapi.client.drive.files.list({
+                q: "name='PlanCraft Pomodoro Audio' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+                fields: 'files(id, name)'
+            }).then(function(response) {
+                const files = response.result.files;
+                if (files.length > 0) {
+                    googleDriveFolderId = files[0].id;
+                    console.log('Found existing Pomodoro folder:', googleDriveFolderId);
+                }
+            }).catch(function(error) {
+                console.error('Error finding folder:', error);
+            });
+        }
+
+        function uploadToGoogleDrive(file, fileName) {
+            return new Promise((resolve, reject) => {
+                if (!googleAuthToken || !googleDriveFolderId) {
+                    reject(new Error('Google Drive not authenticated'));
+                    return;
+                }
+
+                const fileMetadata = {
+                    name: fileName,
+                    parents: [googleDriveFolderId]
+                };
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(fileMetadata)], {type: 'application/json'}));
+                form.append('file', file);
+
+                fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + googleAuthToken
+                    },
+                    body: form
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.id) {
+                        resolve(data);
+                    } else {
+                        reject(new Error('Upload failed'));
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+            });
+        }
+
+        function downloadFromGoogleDrive(fileId) {
+            return new Promise((resolve, reject) => {
+                if (!googleAuthToken) {
+                    reject(new Error('Google Drive not authenticated'));
+                    return;
+                }
+
+                fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + googleAuthToken
+                    }
+                })
+                .then(response => response.blob())
+                .then(blob => {
+                    resolve(blob);
+                })
+                .catch(error => {
+                    reject(error);
+                });
+            });
+        }
+
+        function listGoogleDriveFiles() {
+            return new Promise((resolve, reject) => {
+                if (!googleAuthToken || !googleDriveFolderId) {
+                    reject(new Error('Google Drive not authenticated'));
+                    return;
+                }
+
+                gapi.client.drive.files.list({
+                    q: `'${googleDriveFolderId}' in parents and trashed=false`,
+                    fields: 'files(id, name, size, createdTime)'
+                }).then(function(response) {
+                    resolve(response.result.files);
+                }).catch(function(error) {
+                    reject(error);
+                });
+            });
+        }
+
+        function deleteFromGoogleDrive(fileId) {
+            return new Promise((resolve, reject) => {
+                if (!googleAuthToken) {
+                    reject(new Error('Google Drive not authenticated'));
+                    return;
+                }
+
+                gapi.client.drive.files.delete({
+                    fileId: fileId
+                }).then(function() {
+                    resolve();
+                }).catch(function(error) {
+                    reject(error);
+                });
+            });
+        }
+
+        // Miniplayer Functions
+        function minimizePomodoro() {
+            if (isRunning) {
+                isMinimized = true;
+                document.getElementById('miniplayer').style.display = 'block';
+                document.querySelector('.pomodoro-section').style.display = 'none';
+                document.getElementById('minimizeBtn').innerHTML = '<i class="fas fa-expand"></i> Mở rộng';
+                showToast('Pomodoro đã được thu nhỏ! Timer vẫn chạy trong nền.', 'info');
+            } else {
+                showToast('Vui lòng bắt đầu timer trước khi thu nhỏ!', 'warning');
+            }
+        }
+
+        function expandMiniplayer() {
+            isMinimized = false;
+            document.getElementById('miniplayer').style.display = 'none';
+            document.querySelector('.pomodoro-section').style.display = 'block';
+            document.getElementById('minimizeBtn').innerHTML = '<i class="fas fa-compress"></i> Thu nhỏ';
+        }
+
+        function hideMiniplayer() {
+            if (confirm('Bạn có muốn dừng timer và ẩn miniplayer?')) {
+                pausePomodoro();
+                expandMiniplayer();
+            }
+        }
+
+        function toggleMiniplayerPomodoro() {
+            if (isRunning) {
+                pausePomodoro();
+            } else {
+                startPomodoro();
+            }
+        }
+
+        function resetMiniplayerPomodoro() {
+            resetPomodoro();
+            expandMiniplayer();
+        }
+
+        // Background Audio Functions
+        function playBackgroundSound() {
+            if (soundEnabled && !isTabVisible) {
+                // Play sound even when tab is not visible
+                let audio;
+                if (isBreak) {
+                    if (currentAudioMode === 'custom' && customBreakAudio) {
+                        audio = customBreakAudio;
+                    } else if (currentAudioMode === 'custom' && customUniversalAudio) {
+                        audio = customUniversalAudio;
+                    } else {
+                        audio = document.getElementById('breakStartSound');
+                    }
+                } else {
+                    if (currentAudioMode === 'custom' && customWorkAudio) {
+                        audio = customWorkAudio;
+                    } else if (currentAudioMode === 'custom' && customUniversalAudio) {
+                        audio = customUniversalAudio;
+                    } else {
+                        audio = document.getElementById('workCompleteSound');
+                    }
+                }
+                
+                // Force play in background
+                audio.currentTime = 0;
+                audio.play().catch(e => {
+                    console.log('Background audio play failed:', e);
+                    // Fallback: try to show notification
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('Pomodoro Timer', {
+                            body: isBreak ? 'Hết giờ nghỉ! Bắt đầu làm việc.' : 'Chu kỳ hoàn thành! Nghỉ ngơi.',
+                            icon: '/favicon.ico'
+                        });
+                    }
+                });
+            }
+        }
+
+        // Tab Visibility Detection
+        function handleTabVisibilityChange() {
+            isTabVisible = !document.hidden;
+            if (!isTabVisible && isRunning) {
+                showToast('Timer vẫn chạy trong nền! Âm thanh sẽ phát khi kết thúc.', 'info');
+            }
         }
     </script>
 
@@ -934,6 +2192,96 @@
             transition: all 0.3s ease;
         }
 
+        .stat-content p {
+            color: var(--gray-600);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-2);
+            font-weight: 500;
+        }
+
+        .stat-detail {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+        }
+
+        .stat-detail span {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            padding: var(--spacing-1) var(--spacing-2);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-detail span {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-100);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--border-radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-4);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .stat-icon i {
+            font-size: var(--font-size-xl);
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-6);
+            margin-bottom: var(--spacing-8);
+        }
+
         /* Toast Notification */
         .toast-notification {
             position: fixed;
@@ -982,6 +2330,702 @@
 
         .toast-info i {
             color: var(--primary-color);
+        }
+
+        /* Pomodoro Timer Styles */
+        .pomodoro-section {
+            background: white;
+            border-radius: var(--border-radius-xl);
+            padding: var(--spacing-8);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-8);
+            border: 1px solid var(--gray-100);
+        }
+
+        .pomodoro-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-6);
+        }
+
+        .pomodoro-header h2 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-3);
+        }
+
+        .pomodoro-header h2 i {
+            color: var(--primary-color);
+        }
+
+        .pomodoro-status {
+            background: var(--success-bg);
+            color: var(--success-color);
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+        }
+
+        .pomodoro-container {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: var(--spacing-8);
+            align-items: center;
+        }
+
+        .pomodoro-timer {
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: var(--border-radius-2xl);
+            padding: var(--spacing-8);
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-2);
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .timer-label {
+            font-size: var(--font-size-lg);
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .pomodoro-controls {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-4);
+            min-width: 200px;
+        }
+
+        .pomodoro-controls .btn {
+            padding: var(--spacing-4) var(--spacing-6);
+            font-size: var(--font-size-lg);
+            font-weight: 500;
+            border-radius: var(--border-radius-lg);
+            transition: all 0.3s ease;
+        }
+
+        .pomodoro-controls .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .pomodoro-controls #soundToggle {
+            margin-top: var(--spacing-3);
+            padding: var(--spacing-2) var(--spacing-4);
+            font-size: var(--font-size-sm);
+            border-radius: var(--border-radius-md);
+            transition: all 0.3s ease;
+        }
+
+        .pomodoro-controls #soundToggle:hover {
+            transform: translateY(-1px);
+        }
+
+        .pomodoro-controls .btn-outline-secondary {
+            background: transparent;
+            border: 1px solid var(--gray-400);
+            color: var(--gray-600);
+        }
+
+        .pomodoro-controls .btn-outline-secondary:hover {
+            background: var(--gray-100);
+            border-color: var(--gray-500);
+            color: var(--gray-700);
+        }
+
+        .pomodoro-settings {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-6);
+            margin-top: var(--spacing-6);
+            padding-top: var(--spacing-6);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-2);
+        }
+
+        .setting-group label {
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: var(--font-size-sm);
+        }
+
+        .setting-input {
+            padding: var(--spacing-3);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-base);
+            transition: all 0.3s ease;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .pomodoro-stats {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-8);
+            margin-top: var(--spacing-6);
+            padding-top: var(--spacing-6);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .stat-item i {
+            color: var(--primary-color);
+            font-size: var(--font-size-lg);
+        }
+
+        /* Pomodoro Animation */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .pomodoro-timer.running {
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .pomodoro-container {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-6);
+            }
+
+            .pomodoro-controls {
+                flex-direction: row;
+                justify-content: center;
+                min-width: auto;
+            }
+
+            .pomodoro-controls .btn {
+                flex: 1;
+                max-width: 150px;
+            }
+
+            .timer-display {
+                font-size: 3rem;
+            }
+
+            .pomodoro-settings {
+                grid-template-columns: 1fr;
+            }
+
+            .pomodoro-stats {
+                flex-direction: column;
+                gap: var(--spacing-4);
+                align-items: center;
+            }
+
+            .audio-options {
+                flex-direction: column;
+                gap: var(--spacing-3);
+            }
+
+            .custom-audio-section {
+                padding: var(--spacing-4);
+            }
+
+            .upload-zone {
+                padding: var(--spacing-6);
+            }
+
+            .upload-zone i {
+                font-size: 2rem;
+            }
+
+            .audio-actions {
+                flex-direction: column;
+            }
+
+            .audio-actions .btn {
+                width: 100%;
+            }
+        }
+
+        /* Audio Settings Styles */
+        .audio-settings {
+            grid-column: 1 / -1;
+            margin-top: var(--spacing-6);
+            padding-top: var(--spacing-6);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .audio-settings h3 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: var(--spacing-4);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+
+        .audio-settings h3 i {
+            color: var(--primary-color);
+        }
+
+        .audio-options {
+            display: flex;
+            gap: var(--spacing-6);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .audio-option {
+            display: flex;
+            align-items: center;
+        }
+
+        .audio-option label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .audio-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-custom {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--gray-300);
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .audio-option input[type="radio"]:checked + .radio-custom {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+        }
+
+        .audio-option input[type="radio"]:checked + .radio-custom::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .custom-audio-section {
+            background: var(--gray-50);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-6);
+            margin-top: var(--spacing-4);
+        }
+
+        .audio-type-selector {
+            margin-bottom: var(--spacing-4);
+        }
+
+        .audio-type-selector label {
+            display: block;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .audio-upload-area {
+            margin-bottom: var(--spacing-4);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-8);
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-zone i {
+            font-size: 3rem;
+            color: var(--gray-400);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .upload-zone p {
+            color: var(--gray-600);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .upload-link {
+            color: var(--primary-color);
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: var(--font-size-sm);
+            color: var(--gray-500);
+        }
+
+        .audio-preview {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .preview-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-3);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .preview-info i {
+            color: var(--primary-color);
+            font-size: var(--font-size-lg);
+        }
+
+        .preview-info span {
+            flex: 1;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .audio-actions {
+            display: flex;
+            gap: var(--spacing-3);
+            flex-wrap: wrap;
+        }
+
+        .audio-actions .btn {
+            padding: var(--spacing-2) var(--spacing-4);
+            font-size: var(--font-size-sm);
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .audio-actions .btn-info {
+            background: var(--info-color);
+            border-color: var(--info-color);
+            color: white;
+        }
+
+        .audio-actions .btn-info:hover {
+            background: var(--info-color-dark);
+            border-color: var(--info-color-dark);
+        }
+
+        .audio-actions .btn-warning {
+            background: var(--warning-color);
+            border-color: var(--warning-color);
+            color: white;
+        }
+
+        .audio-actions .btn-warning:hover {
+            background: var(--warning-color-dark);
+            border-color: var(--warning-color-dark);
+        }
+
+        .audio-actions .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .audio-actions .btn:disabled:hover {
+            transform: none;
+        }
+
+        /* Miniplayer Styles */
+        .miniplayer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+            z-index: 1000;
+            min-width: 300px;
+            max-width: 400px;
+            animation: slideInUp 0.3s ease;
+        }
+
+        .miniplayer-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-4);
+            gap: var(--spacing-4);
+        }
+
+        .miniplayer-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .miniplayer-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            margin-bottom: var(--spacing-1);
+        }
+
+        .miniplayer-title i {
+            color: var(--primary-color);
+            font-size: var(--font-size-lg);
+        }
+
+        .miniplayer-title span {
+            font-weight: 600;
+            color: var(--gray-800);
+            font-size: var(--font-size-sm);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .miniplayer-time {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--primary-color);
+            font-family: 'Courier New', monospace;
+        }
+
+        .miniplayer-controls {
+            display: flex;
+            gap: var(--spacing-2);
+        }
+
+        .miniplayer-btn {
+            background: none;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+        }
+
+        .miniplayer-btn:hover {
+            background: var(--gray-100);
+            border-color: var(--gray-400);
+            color: var(--gray-800);
+            transform: translateY(-1px);
+        }
+
+        .miniplayer-btn:active {
+            transform: translateY(0);
+        }
+
+        .miniplayer-btn i {
+            font-size: var(--font-size-sm);
+        }
+
+        /* Miniplayer Animation */
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutDown {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+
+        .miniplayer.hiding {
+            animation: slideOutDown 0.3s ease forwards;
+        }
+
+        /* Responsive Miniplayer */
+        @media (max-width: 768px) {
+            .miniplayer {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+
+            .miniplayer-content {
+                padding: var(--spacing-3);
+            }
+
+            .miniplayer-time {
+                font-size: var(--font-size-lg);
+            }
+
+            .miniplayer-controls {
+                gap: var(--spacing-1);
+            }
+
+            .miniplayer-btn {
+                min-width: 32px;
+                height: 32px;
+                padding: var(--spacing-1);
+            }
+        }
+
+        /* Storage Options Styles */
+        .storage-options {
+            display: flex;
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+            padding: var(--spacing-4);
+            background: var(--gray-50);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--gray-200);
+        }
+
+        .storage-option {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            cursor: pointer;
+            padding: var(--spacing-3);
+            border-radius: var(--border-radius-md);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .storage-option:hover {
+            background: var(--gray-100);
+            border-color: var(--gray-300);
+        }
+
+        .storage-option input[type="radio"] {
+            display: none;
+        }
+
+        .storage-option input[type="radio"]:checked + .radio-custom + .storage-info {
+            color: var(--primary-color);
+        }
+
+        .storage-option input[type="radio"]:checked ~ .storage-info {
+            color: var(--primary-color);
+        }
+
+        .storage-option input[type="radio"]:checked ~ .storage-info i {
+            color: var(--primary-color);
+        }
+
+        .storage-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            font-weight: 500;
+            color: var(--gray-700);
+            transition: all 0.3s ease;
+        }
+
+        .storage-info i {
+            font-size: var(--font-size-lg);
+            color: var(--gray-600);
+            transition: all 0.3s ease;
+        }
+
+        .storage-info .fa-hdd {
+            color: var(--secondary-color);
+        }
+
+        .storage-info .fa-google-drive {
+            color: #4285f4;
+        }
+
+        /* Google Auth Section */
+        .google-auth-section {
+            background: var(--gray-50);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+            border: 1px solid var(--gray-200);
+        }
+
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            margin-bottom: var(--spacing-3);
+            font-weight: 500;
+        }
+
+        .auth-status i {
+            font-size: var(--font-size-lg);
+        }
+
+        .auth-status .fa-user-times {
+            color: var(--error-color);
+        }
+
+        .auth-status .fa-user-check {
+            color: var(--success-color);
+        }
+
+        .google-auth-section .btn {
+            margin-right: var(--spacing-2);
+        }
+
+        .google-auth-section .btn i {
+            margin-right: var(--spacing-1);
         }
     </style>
 </body>
