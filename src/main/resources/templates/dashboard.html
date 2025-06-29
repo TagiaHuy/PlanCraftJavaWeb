@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlanCraft - Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/utilities.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -219,6 +220,9 @@
         </div>
     </div>
 
+    <!-- Load JavaScript files -->
+    <script src="/js/toast.js"></script>
+    <script src="/js/user.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize goals display
@@ -326,30 +330,6 @@
                 loadMoreBtn.style.display = 'none';
             } else {
                 loadMoreBtn.style.display = 'block';
-            }
-        }
-
-        // Edit goal
-        function editGoal(goalId) {
-            // TODO: Implement edit functionality
-            alert('Chức năng chỉnh sửa mục tiêu sẽ được thêm sau');
-        }
-
-        // Delete goal
-        function deleteGoal(goalId) {
-            if (confirm('Bạn có chắc chắn muốn xóa mục tiêu này?')) {
-                fetch(`/api/goals/${goalId}`, {
-                    method: 'DELETE'
-                }).then(response => {
-                    if (response.ok) {
-                        const goalCard = document.querySelector(`[data-goal-id="${goalId}"]`);
-                        goalCard.style.animation = 'fadeOut 0.3s ease-out';
-                        setTimeout(() => {
-                            goalCard.remove();
-                            updateStats();
-                        }, 300);
-                    }
-                });
             }
         }
 

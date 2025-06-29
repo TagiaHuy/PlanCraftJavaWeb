@@ -14,6 +14,9 @@ function initializeApp() {
     initializeTables();
     initializeAnimations();
     initializeTheme();
+    initializeSearch();
+    initializeFilters();
+    animateProgressBars();
 }
 
 // Navigation functionality
@@ -148,23 +151,6 @@ function toggleTheme() {
 }
 
 // Utility functions
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    // Add to page
-    document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
 function showLoading(element) {
     element.classList.add('loading');
     element.innerHTML = '<div class="spinner"></div>';
@@ -175,63 +161,106 @@ function hideLoading(element, originalContent) {
     element.innerHTML = originalContent;
 }
 
-// Goal management functions
-function updateGoalStatus(goalId, status) {
-    showLoading(document.querySelector(`[data-goal-id="${goalId}"]`));
+// Generic CRUD functions
+function deleteEntity(entityId, entityType, selector, successMessage) {
+    const confirmMessage = `Bạn có chắc chắn muốn xóa ${entityType} này?`;
+    if (confirm(confirmMessage)) {
+        const element = document.querySelector(selector.replace('{id}', entityId));
+        if (element) {
+            showLoading(element);
+        }
+        
+        // Simulate API call
+        setTimeout(() => {
+            if (typeof showToast === 'function') {
+                showToast(successMessage, 'success');
+            }
+            location.reload();
+        }, 1000);
+    }
+}
+
+function updateEntityStatus(entityId, status, entityType, selector, successMessage) {
+    const element = document.querySelector(selector.replace('{id}', entityId));
+    if (element) {
+        showLoading(element);
+    }
     
     // Simulate API call
     setTimeout(() => {
-        showNotification('Cập nhật trạng thái thành công!', 'success');
+        if (typeof showToast === 'function') {
+            showToast(successMessage, 'success');
+        }
         location.reload();
     }, 1000);
 }
 
-function deleteGoal(goalId) {
-    if (confirm('Bạn có chắc chắn muốn xóa mục tiêu này?')) {
-        showLoading(document.querySelector(`[data-goal-id="${goalId}"]`));
-        
-        // Simulate API call
-        setTimeout(() => {
-            showNotification('Xóa mục tiêu thành công!', 'success');
-            location.reload();
-        }, 1000);
+function editEntity(entityId, entityType) {
+    // TODO: Implement edit functionality
+    if (typeof showToast === 'function') {
+        showToast(`Chức năng chỉnh sửa ${entityType} sẽ được thêm sau`, 'info');
+    } else {
+        alert(`Chức năng chỉnh sửa ${entityType} sẽ được thêm sau`);
     }
+}
+
+// Goal management functions
+function updateGoalStatus(goalId, status) {
+    updateEntityStatus(
+        goalId, 
+        status, 
+        'mục tiêu', 
+        '[data-goal-id="{id}"]', 
+        'Cập nhật trạng thái thành công!'
+    );
+}
+
+function deleteGoal(goalId) {
+    deleteEntity(
+        goalId, 
+        'mục tiêu', 
+        '[data-goal-id="{id}"]', 
+        'Xóa mục tiêu thành công!'
+    );
 }
 
 // Stage management functions
 function updateStageStatus(stageId, status) {
-    showLoading(document.querySelector(`[data-stage-id="${stageId}"]`));
-    
-    // Simulate API call
-    setTimeout(() => {
-        showNotification('Cập nhật trạng thái giai đoạn thành công!', 'success');
-        location.reload();
-    }, 1000);
+    updateEntityStatus(
+        stageId, 
+        status, 
+        'giai đoạn', 
+        '[data-stage-id="{id}"]', 
+        'Cập nhật trạng thái giai đoạn thành công!'
+    );
 }
 
 // User management functions
 function viewUser(userId) {
-    showNotification(`Xem chi tiết người dùng ID: ${userId}`, 'info');
-}
-
-function deleteUser(userId) {
-    if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-        showLoading(document.querySelector(`[data-user-id="${userId}"]`));
-        
-        // Simulate API call
-        setTimeout(() => {
-            showNotification('Xóa người dùng thành công!', 'success');
-            location.reload();
-        }, 1000);
+    if (typeof showToast === 'function') {
+        showToast(`Xem chi tiết người dùng ID: ${userId}`, 'info');
     }
 }
 
+function deleteUser(userId) {
+    deleteEntity(
+        userId, 
+        'người dùng', 
+        '[data-user-id="{id}"]', 
+        'Xóa người dùng thành công!'
+    );
+}
+
 function exportUsers() {
-    showNotification('Đang xuất dữ liệu...', 'info');
+    if (typeof showToast === 'function') {
+        showToast('Đang xuất dữ liệu...', 'info');
+    }
     
     // Simulate export process
     setTimeout(() => {
-        showNotification('Xuất dữ liệu thành công!', 'success');
+        if (typeof showToast === 'function') {
+            showToast('Xuất dữ liệu thành công!', 'success');
+        }
     }, 2000);
 }
 
@@ -294,18 +323,13 @@ function animateProgressBars() {
     });
 }
 
-// Initialize additional features
-document.addEventListener('DOMContentLoaded', function() {
-    initializeSearch();
-    initializeFilters();
-    animateProgressBars();
-});
-
 // Export functions for global use
 window.PlanCraft = {
-    showNotification,
     showLoading,
     hideLoading,
+    deleteEntity,
+    updateEntityStatus,
+    editEntity,
     updateGoalStatus,
     deleteGoal,
     updateStageStatus,

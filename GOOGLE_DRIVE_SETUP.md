@@ -3,6 +3,8 @@
 ## Tổng quan
 PlanCraft hỗ trợ lưu trữ âm thanh tùy chỉnh trên Google Drive thay vì LocalStorage, cho phép lưu trữ file lớn hơn (tối đa 100MB) và truy cập từ nhiều thiết bị.
 
+**Lưu ý quan trọng:** PlanCraft sử dụng Google Identity Services (GIS) mới thay vì thư viện gapi cũ đã bị deprecated.
+
 ## Bước 1: Tạo Google Cloud Project
 
 1. Truy cập [Google Cloud Console](https://console.cloud.google.com/)
@@ -23,38 +25,94 @@ PlanCraft hỗ trợ lưu trữ âm thanh tùy chỉnh trên Google Drive thay v
 3. Chọn "Web application"
 4. Đặt tên cho client (ví dụ: "PlanCraft Web Client")
 5. Thêm Authorized JavaScript origins:
-   - `http://localhost:8080` (cho development)
-   - `https://yourdomain.com` (cho production)
+   - `http://localhost:8080` (development)
+   - `https://yourdomain.com` (production)
 6. Thêm Authorized redirect URIs:
-   - `http://localhost:8080`
-   - `https://yourdomain.com`
+   - `http://localhost:8080` (development)
+   - `https://yourdomain.com` (production)
 7. Click "Create"
 
 ## Bước 4: Tạo API Key
 
 1. Trong "Credentials", click "Create Credentials" > "API Key"
-2. Copy API Key được tạo
+2. Đặt tên cho API Key (ví dụ: "PlanCraft API Key")
+3. Click "Create"
+4. (Tùy chọn) Click "Restrict Key" để giới hạn quyền truy cập
 
-## Bước 5: Cập nhật mã nguồn
-
-Trong file `src/main/resources/templates/stage-detail.html`, thay thế các giá trị sau:
-
-```javascript
-const GOOGLE_DRIVE_API_KEY = 'YOUR_API_KEY'; // Thay bằng API Key của bạn
-const GOOGLE_DRIVE_CLIENT_ID = 'YOUR_CLIENT_ID'; // Thay bằng Client ID của bạn
-```
-
-## Bước 6: Cấu hình OAuth Consent Screen
+## Bước 5: Cấu hình OAuth Consent Screen
 
 1. Vào "APIs & Services" > "OAuth consent screen"
 2. Chọn "External" và click "Create"
 3. Điền thông tin:
    - App name: "PlanCraft Pomodoro"
-   - User support email: email của bạn
-   - Developer contact information: email của bạn
-4. Thêm scope: `https://www.googleapis.com/auth/drive.file`
-5. Thêm test users (email của bạn)
-6. Click "Save and Continue"
+   - User support email: Email của bạn
+   - Developer contact information: Email của bạn
+4. Click "Save and Continue"
+5. Trong "Scopes", click "Add or Remove Scopes"
+6. Tìm và chọn `https://www.googleapis.com/auth/drive.file`
+7. Click "Save and Continue"
+8. Trong "Test users", thêm email của bạn
+9. Click "Save and Continue"
+
+## Bước 6: Cập nhật mã nguồn
+
+Trong file `src/main/resources/templates/stage-detail.html`, cập nhật các giá trị:
+
+```javascript
+const GOOGLE_DRIVE_API_KEY = 'YOUR_API_KEY_HERE';
+const GOOGLE_DRIVE_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+```
+
+**Lưu ý:** 
+- Thay `YOUR_API_KEY_HERE` bằng API Key từ Bước 4
+- Thay `YOUR_CLIENT_ID_HERE` bằng Client ID từ Bước 3
+- Không commit các giá trị này lên git (sử dụng environment variables trong production)
+
+## Bước 7: Test
+
+1. Khởi động ứng dụng Spring Boot
+2. Truy cập trang stage-detail
+3. Chọn chế độ lưu trữ "Google Drive"
+4. Click "Đăng nhập Google Drive"
+5. Đăng nhập với Google account
+6. Cấp quyền truy cập Google Drive
+7. Test upload file âm thanh
+
+## Cấu hình Production
+
+### 1. Domain và HTTPS
+- Đảm bảo sử dụng HTTPS trong production
+- Thêm domain production vào Authorized JavaScript origins
+- Thêm domain production vào Authorized redirect URIs
+
+### 2. OAuth Consent Screen
+- Publish app nếu muốn cho phép tất cả user sử dụng
+- Hoặc thêm email của user vào Test users
+
+### 3. API Key Restrictions
+- Giới hạn API Key chỉ cho Google Drive API
+- Giới hạn domain sử dụng API Key
+
+## Troubleshooting
+
+Nếu gặp lỗi, hãy:
+1. Kiểm tra file `GOOGLE_DRIVE_TROUBLESHOOTING.md`
+2. Sử dụng nút Debug trong giao diện
+3. Kiểm tra Developer Console (F12) để xem lỗi chi tiết
+
+## Migration từ gapi cũ
+
+PlanCraft đã được cập nhật để sử dụng Google Identity Services mới:
+- ✅ Thay thế `gapi.auth2` bằng `google.accounts.oauth2`
+- ✅ Sử dụng `fetch` API thay vì `gapi.client`
+- ✅ Cải thiện error handling
+- ✅ Hỗ trợ token revocation
+
+## Tài liệu tham khảo
+
+- [Google Identity Services Documentation](https://developers.google.com/identity/gsi/web)
+- [Google Drive API Documentation](https://developers.google.com/drive/api)
+- [Migration Guide](https://developers.google.com/identity/gsi/web/guides/gis-migration)
 
 ## Tính năng
 
@@ -79,20 +137,6 @@ const GOOGLE_DRIVE_CLIENT_ID = 'YOUR_CLIENT_ID'; // Thay bằng Client ID của 
 3. Chọn tài khoản Google và cấp quyền
 4. Upload file âm thanh như bình thường
 5. File sẽ được lưu lên Google Drive
-
-## Troubleshooting
-
-### Lỗi "Google Drive API chưa được khởi tạo"
-- Kiểm tra API Key và Client ID đã đúng chưa
-- Đảm bảo Google Drive API đã được bật
-
-### Lỗi "Đăng nhập Google Drive thất bại"
-- Kiểm tra OAuth consent screen đã được cấu hình
-- Đảm bảo domain đã được thêm vào Authorized origins
-
-### Lỗi "Upload failed"
-- Kiểm tra quyền truy cập Google Drive
-- Đảm bảo file không quá lớn (tối đa 100MB)
 
 ## Lưu ý
 

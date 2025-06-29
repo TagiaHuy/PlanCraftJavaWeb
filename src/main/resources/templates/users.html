@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlanCraft - Quản lý người dùng</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/utilities.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -158,6 +159,9 @@
         </div>
     </div>
 
+    <!-- Load JavaScript files -->
+    <script src="/js/toast.js"></script>
+    <script src="/js/user.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Add fade-in animation to table rows
@@ -177,26 +181,6 @@
                 });
             });
         });
-
-        // Export users function
-        function exportUsers() {
-            // This would typically make an API call to export data
-            alert('Tính năng xuất dữ liệu sẽ được phát triển trong phiên bản tiếp theo!');
-        }
-
-        // View user function
-        function viewUser(userId) {
-            // This would typically navigate to user detail page
-            alert('Xem chi tiết người dùng ID: ' + userId);
-        }
-
-        // Delete user function
-        function deleteUser(userId) {
-            if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-                // This would typically make an API call to delete user
-                alert('Xóa người dùng ID: ' + userId);
-            }
-        }
     </script>
 </body>
 </html> 
