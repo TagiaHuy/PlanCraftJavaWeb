@@ -149,36 +149,50 @@
 
                 <!-- Pomodoro Timer -->
                 <div class="pomodoro-section">
-                    <div class="pomodoro-header">
+                    <div class="pomodoro-header" onclick="togglePomodoroDropdown()" style="cursor: pointer;" 
+                         title="Click để mở/đóng Pomodoro Timer" role="button" tabindex="0"
+                         onkeypress="if(event.key==='Enter'||event.key===' ') togglePomodoroDropdown()">
                         <h2><i class="fas fa-clock"></i> Pomodoro Timer</h2>
-                        <div class="pomodoro-status" id="pomodoroStatus">Sẵn sàng</div>
+                        <div class="header-timer" id="headerTimer" style="display: none;">
+                            <span class="header-time" id="headerTime">25:00</span>
+                            <div class="header-controls">
+                                <button class="header-control-btn" id="headerStartBtn" onclick="event.stopPropagation(); startPomodoro();" title="Bắt đầu">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="header-control-btn" id="headerPauseBtn" onclick="event.stopPropagation(); pausePomodoro();" style="display: none;" title="Tạm dừng">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                                <button class="header-control-btn" id="headerResetBtn" onclick="event.stopPropagation(); resetPomodoro();" title="Đặt lại">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button class="header-control-btn" id="headerSoundToggle" onclick="event.stopPropagation(); toggleSound();" title="Bật/Tắt âm thanh">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-down" id="pomodoroDropdownIcon" aria-label="Toggle dropdown"></i>
                     </div>
                     
-                    <div class="pomodoro-container">
+                    <div class="pomodoro-container" id="pomodoroContainer" style="display: none;">
                         <div class="pomodoro-timer">
-                            <div class="timer-display" id="timerDisplay">25:00</div>
-                            <div class="timer-label" id="timerLabel">Thời gian làm việc</div>
-                        </div>
-                        
-                        <div class="pomodoro-controls">
-                            <button class="btn btn-primary btn-lg" id="startBtn" onclick="startPomodoro()">
-                                <i class="fas fa-play"></i> Bắt đầu
-                            </button>
-                            <button class="btn btn-secondary btn-lg" id="pauseBtn" onclick="pausePomodoro()" style="display: none;">
-                                <i class="fas fa-pause"></i> Tạm dừng
-                            </button>
-                            <button class="btn btn-danger btn-lg" id="resetBtn" onclick="resetPomodoro()">
-                                <i class="fas fa-redo"></i> Đặt lại
-                            </button>
-                            <button class="btn btn-secondary btn-sm" id="soundToggle" onclick="toggleSound()">
-                                <i class="fas fa-volume-up"></i> Tắt âm thanh
-                            </button>
-                            <button class="btn btn-outline-primary btn-sm" onclick="testSound()">
-                                <i class="fas fa-play"></i> Test âm thanh
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="minimizePomodoro()" id="minimizeBtn">
-                                <i class="fas fa-compress"></i> Thu nhỏ
-                            </button>
+                            <div class="timer-display-container">
+                                <div class="timer-display" id="timerDisplay">25:00</div>
+                                <div class="timer-label" id="timerLabel">Thời gian làm việc</div>
+                            </div>
+                            <div class="timer-controls">
+                                <button class="timer-control-btn" id="startBtn" onclick="startPomodoro()" title="Bắt đầu">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="timer-control-btn" id="pauseBtn" onclick="pausePomodoro()" style="display: none;" title="Tạm dừng">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                                <button class="timer-control-btn" id="resetBtn" onclick="resetPomodoro()" title="Đặt lại">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button class="timer-control-btn" id="soundToggle" onclick="toggleSound()" title="Bật/Tắt âm thanh">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="pomodoro-settings">
@@ -296,9 +310,6 @@
                                     </button>
                                     <button class="btn btn-warning btn-sm" onclick="showStorageManagementDialog()" id="storageManageBtn">
                                         <i class="fas fa-hdd"></i> Quản lý dung lượng
-                                    </button>
-                                    <button class="btn btn-outline-info btn-sm" onclick="testFileUpload()" title="Test file upload functionality">
-                                        <i class="fas fa-bug"></i> Test Upload
                                     </button>
                                 </div>
                             </div>

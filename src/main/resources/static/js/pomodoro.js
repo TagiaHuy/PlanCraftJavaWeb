@@ -91,129 +91,163 @@ function playLongBreakSound() {
 
 function toggleSound() {
     soundEnabled = !soundEnabled;
-    const soundBtn = document.getElementById('soundToggle');
+    const soundToggle = document.getElementById('soundToggle');
+    const headerSoundToggle = document.getElementById('headerSoundToggle');
+    const icon = soundToggle.querySelector('i');
+    const headerIcon = headerSoundToggle ? headerSoundToggle.querySelector('i') : null;
+    
     if (soundEnabled) {
-        soundBtn.innerHTML = '<i class="fas fa-volume-up"></i> Tắt âm thanh';
-        soundBtn.className = 'btn btn-secondary btn-sm';
-        // Play a test sound
-        playWorkCompleteSound();
+        icon.className = 'fas fa-volume-up';
+        soundToggle.classList.remove('muted');
+        soundToggle.title = 'Tắt âm thanh';
+        if (headerIcon) {
+            headerIcon.className = 'fas fa-volume-up';
+            headerSoundToggle.classList.remove('muted');
+            headerSoundToggle.title = 'Tắt âm thanh';
+        }
+        showToast('Âm thanh đã được bật', 'success');
     } else {
-        soundBtn.innerHTML = '<i class="fas fa-volume-mute"></i> Bật âm thanh';
-        soundBtn.className = 'btn btn-outline-secondary btn-sm';
+        icon.className = 'fas fa-volume-mute';
+        soundToggle.classList.add('muted');
+        soundToggle.title = 'Bật âm thanh';
+        if (headerIcon) {
+            headerIcon.className = 'fas fa-volume-mute';
+            headerSoundToggle.classList.add('muted');
+            headerSoundToggle.title = 'Bật âm thanh';
+        }
+        showToast('Âm thanh đã được tắt', 'info');
     }
-}
-
-function testSound() {
-    if (soundEnabled) {
-        playWorkCompleteSound();
-        showToast('Đang phát âm thanh test!', 'info');
-    } else {
-        showToast('Âm thanh đã bị tắt. Vui lòng bật âm thanh trước.', 'warning');
-    }
+    
+    // Save preference
+    localStorage.setItem('pomodoroSoundEnabled', soundEnabled);
 }
 
 // Pomodoro Functions
 function startPomodoro() {
-    if (!isRunning) {
-        isRunning = true;
-        document.getElementById('startBtn').style.display = 'none';
-        document.getElementById('pauseBtn').style.display = 'inline-block';
-        document.getElementById('pomodoroStatus').textContent = isBreak ? 'Đang nghỉ ngơi' : 'Đang làm việc';
-        document.querySelector('.pomodoro-timer').classList.add('running');
+    if (pomodoroTimer) return;
+    
+    isRunning = true;
+    isBreak = false;
+    currentTime = workTime * 60;
+    
+    pomodoroTimer = setInterval(() => {
+        currentTime--;
+        updateTimerDisplay();
         
-        // Update miniplayer if minimized
-        if (isMinimized) {
-            document.getElementById('miniplayerToggle').innerHTML = '<i class="fas fa-pause"></i>';
-            document.getElementById('miniplayerLabel').textContent = isBreak ? 'Nghỉ ngơi' : 'Làm việc';
-        }
-        
-        pomodoroTimer = setInterval(() => {
-            currentTime--;
-            totalSeconds++;
-            updateTimerDisplay();
+        if (currentTime <= 0) {
+            clearInterval(pomodoroTimer);
+            pomodoroTimer = null;
+            isRunning = false;
             
-            if (currentTime <= 0) {
-                if (isBreak) {
-                    // Break finished, start work session
-                    isBreak = false;
-                    currentTime = workTime * 60;
-                    document.getElementById('timerLabel').textContent = 'Thời gian làm việc';
-                    document.getElementById('pomodoroStatus').textContent = 'Đang làm việc';
-                    showToast('Hết giờ nghỉ! Bắt đầu làm việc.', 'info');
-                    playWorkCompleteSound();
-                    playBackgroundSound();
-                    
-                    // Update miniplayer
-                    if (isMinimized) {
-                        document.getElementById('miniplayerLabel').textContent = 'Làm việc';
-                    }
-                } else {
-                    // Work session finished, start break
-                    isBreak = true;
-                    completedCycles++;
-                    document.getElementById('completedCycles').textContent = completedCycles;
-                    
-                    // Check if it's time for a long break (every 4 cycles)
-                    if (completedCycles % 4 === 0) {
-                        currentTime = longBreakTime * 60;
-                        document.getElementById('timerLabel').textContent = 'Nghỉ ngơi dài';
-                        showToast('Chu kỳ hoàn thành! Nghỉ ngơi dài.', 'success');
-                        playLongBreakSound();
-                        playBackgroundSound();
-                        
-                        // Update miniplayer
-                        if (isMinimized) {
-                            document.getElementById('miniplayerLabel').textContent = 'Nghỉ ngơi dài';
-                        }
-                    } else {
-                        currentTime = breakTime * 60;
-                        document.getElementById('timerLabel').textContent = 'Thời gian nghỉ ngơi';
-                        showToast('Chu kỳ hoàn thành! Nghỉ ngơi ngắn.', 'success');
-                        playBreakStartSound();
-                        playBackgroundSound();
-                        
-                        // Update miniplayer
-                        if (isMinimized) {
-                            document.getElementById('miniplayerLabel').textContent = 'Nghỉ ngơi';
-                        }
-                    }
-                    
-                    document.getElementById('pomodoroStatus').textContent = 'Đang nghỉ ngơi';
-                }
-                updateTimerDisplay();
+            // Play sound
+            if (soundEnabled) {
+                playWorkCompleteSound();
             }
-        }, 1000);
+            
+            // Show notification
+            showToast('Phiên làm việc đã hoàn thành!', 'success');
+            
+            // Update UI
+            document.getElementById('startBtn').style.display = 'flex';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('headerStartBtn').style.display = 'flex';
+            document.getElementById('headerPauseBtn').style.display = 'none';
+            
+            // Remove running class from timer container
+            const timerContainer = document.querySelector('.timer-display-container');
+            if (timerContainer) {
+                timerContainer.classList.remove('running');
+            }
+            
+            // Update status
+            updateTimerLabel('Thời gian làm việc');
+        }
+    }, 1000);
+    
+    // Update UI
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('pauseBtn').style.display = 'flex';
+    document.getElementById('headerStartBtn').style.display = 'none';
+    document.getElementById('headerPauseBtn').style.display = 'flex';
+    
+    // Add running class to timer container
+    const timerContainer = document.querySelector('.timer-display-container');
+    if (timerContainer) {
+        timerContainer.classList.add('running');
+    }
+    
+    // Show notification
+    showToast('Bắt đầu phiên làm việc!', 'success');
+    
+    // Update status
+    updateTimerLabel('Thời gian làm việc');
+    
+    // Show miniplayer
+    if (typeof showMiniplayer === 'function') {
+        showMiniplayer();
     }
 }
 
 function pausePomodoro() {
-    if (isRunning) {
-        isRunning = false;
-        clearInterval(pomodoroTimer);
-        document.getElementById('startBtn').style.display = 'inline-block';
-        document.getElementById('pauseBtn').style.display = 'none';
-        document.getElementById('pomodoroStatus').textContent = 'Đã tạm dừng';
-        document.querySelector('.pomodoro-timer').classList.remove('running');
-        
-        // Update miniplayer if minimized
-        if (isMinimized) {
-            document.getElementById('miniplayerToggle').innerHTML = '<i class="fas fa-play"></i>';
-        }
+    if (!pomodoroTimer) return;
+    
+    clearInterval(pomodoroTimer);
+    pomodoroTimer = null;
+    isRunning = false;
+    
+    // Update UI
+    document.getElementById('startBtn').style.display = 'flex';
+    document.getElementById('pauseBtn').style.display = 'none';
+    document.getElementById('headerStartBtn').style.display = 'flex';
+    document.getElementById('headerPauseBtn').style.display = 'none';
+    
+    // Remove running class from timer container
+    const timerContainer = document.querySelector('.timer-display-container');
+    if (timerContainer) {
+        timerContainer.classList.remove('running');
     }
+    
+    // Update miniplayer
+    if (typeof updateMiniplayer === 'function') {
+        updateMiniplayer();
+    }
+    
+    // Show notification
+    showToast('Timer đã được tạm dừng', 'info');
 }
 
 function resetPomodoro() {
-    pausePomodoro();
+    if (pomodoroTimer) {
+        clearInterval(pomodoroTimer);
+        pomodoroTimer = null;
+    }
+    
+    isRunning = false;
     isBreak = false;
     currentTime = workTime * 60;
-    completedCycles = 0;
-    totalSeconds = 0;
-    document.getElementById('completedCycles').textContent = '0';
-    document.getElementById('totalTime').textContent = '00:00';
+    
+    // Update UI
+    document.getElementById('startBtn').style.display = 'flex';
+    document.getElementById('pauseBtn').style.display = 'none';
+    document.getElementById('headerStartBtn').style.display = 'flex';
+    document.getElementById('headerPauseBtn').style.display = 'none';
     document.getElementById('timerLabel').textContent = 'Thời gian làm việc';
-    document.getElementById('pomodoroStatus').textContent = 'Sẵn sàng';
-    document.querySelector('.pomodoro-timer').classList.remove('running');
+    
+    // Remove running class from timer container
+    const timerContainer = document.querySelector('.timer-display-container');
+    if (timerContainer) {
+        timerContainer.classList.remove('running');
+    }
+    
     updateTimerDisplay();
+    
+    // Show notification
+    showToast('Timer đã được đặt lại', 'info');
+    
+    // Hide miniplayer without confirmation
+    if (typeof expandMiniplayer === 'function') {
+        expandMiniplayer();
+    }
 }
 
 function updateTimerDisplay() {
@@ -222,6 +256,12 @@ function updateTimerDisplay() {
     const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
     document.getElementById('timerDisplay').textContent = timeString;
+    
+    // Update header timer
+    const headerTime = document.getElementById('headerTime');
+    if (headerTime) {
+        headerTime.textContent = timeString;
+    }
     
     // Update miniplayer if minimized
     if (isMinimized) {
@@ -281,11 +321,111 @@ function handleTabVisibilityChange() {
     }
 }
 
+// Toggle Pomodoro dropdown
+window.togglePomodoroDropdown = function() {
+    const container = document.getElementById('pomodoroContainer');
+    const icon = document.getElementById('pomodoroDropdownIcon');
+    const headerTimer = document.getElementById('headerTimer');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        icon.classList.add('rotated');
+        headerTimer.style.display = 'none';
+        localStorage.setItem('pomodoroDropdownOpen', 'true');
+        
+        // Add slide down animation
+        container.style.animation = 'slideDown 0.3s ease-out';
+    } else {
+        container.style.display = 'none';
+        icon.classList.remove('rotated');
+        headerTimer.style.display = 'flex';
+        localStorage.setItem('pomodoroDropdownOpen', 'false');
+    }
+};
+
 // Initialize Pomodoro
-function initializePomodoro() {
+window.initializePomodoro = function() {
+    // Load saved settings
+    loadPomodoroSettings();
+    
+    // Initialize audio settings
+    initializeAudioSettings();
+    
+    // Set up event listeners
+    setupPomodoroEventListeners();
+    
+    // Restore dropdown state
+    restoreDropdownState();
+    
+    // Update display
+    updateTimerDisplay();
+};
+
+// Load Pomodoro settings
+function loadPomodoroSettings() {
+    const savedWorkTime = localStorage.getItem('pomodoroWorkTime');
+    const savedBreakTime = localStorage.getItem('pomodoroBreakTime');
+    const savedLongBreakTime = localStorage.getItem('pomodoroLongBreakTime');
+    
+    if (savedWorkTime) {
+        document.getElementById('workTime').value = savedWorkTime;
+        workTime = parseInt(savedWorkTime);
+    }
+    
+    if (savedBreakTime) {
+        document.getElementById('breakTime').value = savedBreakTime;
+        breakTime = parseInt(savedBreakTime);
+    }
+    
+    if (savedLongBreakTime) {
+        document.getElementById('longBreakTime').value = savedLongBreakTime;
+        longBreakTime = parseInt(savedLongBreakTime);
+    }
+}
+
+// Initialize audio settings
+function initializeAudioSettings() {
+    // Request notification permission for background alerts
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    
+    // Add tab visibility change listener
+    document.addEventListener('visibilitychange', handleTabVisibilityChange);
+    
+    // Load sound preference
+    const savedSoundEnabled = localStorage.getItem('pomodoroSoundEnabled');
+    if (savedSoundEnabled !== null) {
+        soundEnabled = savedSoundEnabled === 'true';
+    }
+    
+    // Update sound button icon
+    updateSoundButtonIcon();
+}
+
+// Update sound button icon based on current state
+function updateSoundButtonIcon() {
+    const soundToggle = document.getElementById('soundToggle');
+    if (soundToggle) {
+        const icon = soundToggle.querySelector('i');
+        if (soundEnabled) {
+            icon.className = 'fas fa-volume-up';
+            soundToggle.classList.remove('muted');
+            soundToggle.title = 'Tắt âm thanh';
+        } else {
+            icon.className = 'fas fa-volume-mute';
+            soundToggle.classList.add('muted');
+            soundToggle.title = 'Bật âm thanh';
+        }
+    }
+}
+
+// Set up Pomodoro event listeners
+function setupPomodoroEventListeners() {
     // Pomodoro settings
     document.getElementById('workTime').addEventListener('change', function() {
         workTime = parseInt(this.value);
+        localStorage.setItem('pomodoroWorkTime', workTime);
         if (!isRunning && !isBreak) {
             currentTime = workTime * 60;
             updateTimerDisplay();
@@ -294,19 +434,31 @@ function initializePomodoro() {
     
     document.getElementById('breakTime').addEventListener('change', function() {
         breakTime = parseInt(this.value);
+        localStorage.setItem('pomodoroBreakTime', breakTime);
     });
     
     document.getElementById('longBreakTime').addEventListener('change', function() {
         longBreakTime = parseInt(this.value);
+        localStorage.setItem('pomodoroLongBreakTime', longBreakTime);
     });
+}
 
-    // Request notification permission for background alerts
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+// Restore dropdown state from localStorage
+function restoreDropdownState() {
+    const isOpen = localStorage.getItem('pomodoroDropdownOpen') === 'true';
+    const container = document.getElementById('pomodoroContainer');
+    const icon = document.getElementById('pomodoroDropdownIcon');
+    const headerTimer = document.getElementById('headerTimer');
+    
+    if (isOpen) {
+        container.style.display = 'block';
+        icon.classList.add('rotated');
+        headerTimer.style.display = 'none';
+    } else {
+        container.style.display = 'none';
+        icon.classList.remove('rotated');
+        headerTimer.style.display = 'flex';
     }
-
-    // Add tab visibility change listener
-    document.addEventListener('visibilitychange', handleTabVisibilityChange);
 }
 
 // Export functions for global access
@@ -314,5 +466,4 @@ window.startPomodoro = startPomodoro;
 window.pausePomodoro = pausePomodoro;
 window.resetPomodoro = resetPomodoro;
 window.toggleSound = toggleSound;
-window.testSound = testSound;
 window.initializePomodoro = initializePomodoro; 

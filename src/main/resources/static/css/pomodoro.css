@@ -2,69 +2,233 @@
 .pomodoro-section {
     background: white;
     border-radius: var(--border-radius-xl);
-    padding: var(--spacing-8);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-lg);
     margin-bottom: var(--spacing-8);
-    border: 1px solid var(--gray-100);
+    overflow: hidden;
+    width: 100%;
 }
 
 .pomodoro-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-6);
+    padding: var(--spacing-6);
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    flex: 1;
 }
 
 .pomodoro-header h2 {
+    margin: 0;
     font-size: var(--font-size-xl);
     font-weight: 600;
-    color: var(--gray-800);
     display: flex;
     align-items: center;
     gap: var(--spacing-3);
 }
 
-.pomodoro-header h2 i {
-    color: var(--primary-color);
+.pomodoro-header i {
+    font-size: var(--font-size-lg);
+    transition: transform 0.3s ease;
+}
+
+.pomodoro-header.expanded i {
+    transform: rotate(180deg);
 }
 
 .pomodoro-status {
-    background: var(--success-bg);
-    color: var(--success-color);
-    padding: var(--spacing-2) var(--spacing-4);
-    border-radius: var(--border-radius-full);
     font-size: var(--font-size-sm);
     font-weight: 500;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--border-radius-lg);
+    background: var(--gray-100);
+    color: var(--gray-700);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.pomodoro-status.running {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.pomodoro-status.paused {
+    background: var(--warning-bg);
+    color: var(--warning-color);
+}
+
+#pomodoroDropdownIcon {
+    color: var(--gray-500);
+    transition: transform 0.3s ease;
+    font-size: var(--font-size-sm);
+    margin-left: var(--spacing-2);
+}
+
+#pomodoroDropdownIcon.rotated {
+    transform: rotate(180deg);
+    color: var(--primary-color);
 }
 
 .pomodoro-container {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--spacing-8);
-    align-items: center;
+    padding: var(--spacing-4);
+    background: white;
+    width: 100%;
+    animation: slideDown 0.3s ease-out;
+    overflow: hidden;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 2000px;
+    }
 }
 
 .pomodoro-timer {
     text-align: center;
+    margin-bottom: var(--spacing-6);
+    width: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.timer-display-container {
+    position: relative;
+    display: block;
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     border-radius: var(--border-radius-2xl);
-    padding: var(--spacing-8);
-    color: white;
-    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-12) var(--spacing-8);
+    box-shadow: var(--shadow-xl);
+    margin-bottom: var(--spacing-6);
+    animation: pulse 2s infinite;
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .timer-display {
-    font-size: 4rem;
+    font-size: 6rem;
     font-weight: 700;
-    margin-bottom: var(--spacing-2);
+    color: white;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    margin-bottom: var(--spacing-4);
     font-family: 'Courier New', monospace;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    line-height: 1;
 }
 
 .timer-label {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
     font-weight: 500;
+    color: white;
     opacity: 0.9;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.timer-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-6);
+    padding: var(--spacing-4);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-xl);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.timer-control-btn {
+    width: 60px;
+    height: 60px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.timer-control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.timer-control-btn:hover::before {
+    opacity: 1;
+}
+
+.timer-control-btn:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.timer-control-btn:active {
+    transform: scale(0.95);
+}
+
+.timer-control-btn#startBtn:hover {
+    color: var(--success-color);
+    background: var(--success-bg);
+}
+
+.timer-control-btn#pauseBtn:hover {
+    color: var(--warning-color);
+    background: var(--warning-bg);
+}
+
+.timer-control-btn#resetBtn:hover {
+    color: var(--danger-color);
+    background: var(--danger-bg);
+}
+
+.timer-control-btn#soundToggle:hover {
+    color: var(--primary-color);
+    background: var(--primary-bg);
+}
+
+.timer-control-btn#soundToggle.muted {
+    color: var(--gray-500);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.timer-control-btn#soundToggle.muted:hover {
+    color: var(--danger-color);
+    background: var(--danger-bg);
 }
 
 .pomodoro-controls {
@@ -111,14 +275,12 @@
     color: var(--gray-700);
 }
 
+/* Pomodoro Settings */
 .pomodoro-settings {
-    grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-6);
-    margin-top: var(--spacing-6);
-    padding-top: var(--spacing-6);
-    border-top: 1px solid var(--gray-200);
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
 }
 
 .setting-group {
@@ -134,17 +296,17 @@
 }
 
 .setting-input {
-    padding: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
     border: 1px solid var(--gray-300);
     border-radius: var(--border-radius-md);
-    font-size: var(--font-size-base);
-    transition: all 0.3s ease;
+    font-size: var(--font-size-sm);
+    transition: all 0.2s ease;
 }
 
 .setting-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px var(--primary-bg);
 }
 
 .pomodoro-stats {
@@ -173,15 +335,15 @@
 /* Pomodoro Animation */
 @keyframes pulse {
     0%, 100% {
-        transform: scale(1);
+        box-shadow: var(--shadow-xl);
     }
     50% {
-        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
     }
 }
 
 .pomodoro-timer.running {
-    animation: pulse 2s infinite;
+    animation: pulse 1s infinite;
 }
 
 /* Audio Settings Styles */
@@ -507,8 +669,28 @@
         max-width: 150px;
     }
 
+    .timer-display-container {
+        padding: var(--spacing-8) var(--spacing-6);
+        min-height: 250px;
+    }
+    
     .timer-display {
-        font-size: 3rem;
+        font-size: 4rem;
+    }
+    
+    .timer-label {
+        font-size: var(--font-size-lg);
+    }
+    
+    .timer-controls {
+        gap: var(--spacing-3);
+        padding: var(--spacing-3);
+    }
+    
+    .timer-control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1rem;
     }
 
     .pomodoro-settings {
@@ -544,5 +726,299 @@
 
     .audio-actions .btn {
         width: 100%;
+    }
+
+    .pomodoro-header {
+        padding: var(--spacing-3) var(--spacing-4);
+        flex-wrap: wrap;
+        gap: var(--spacing-2);
+    }
+    
+    .pomodoro-header h2 {
+        font-size: var(--font-size-base);
+    }
+    
+    .pomodoro-status {
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-1) var(--spacing-2);
+    }
+    
+    .pomodoro-container {
+        padding: var(--spacing-4);
+    }
+}
+
+@media (max-width: 480px) {
+    .timer-display-container {
+        padding: var(--spacing-6) var(--spacing-4);
+        min-height: 200px;
+    }
+    
+    .timer-display {
+        font-size: 3rem;
+    }
+    
+    .timer-label {
+        font-size: var(--font-size-base);
+    }
+    
+    .timer-controls {
+        gap: var(--spacing-2);
+        padding: var(--spacing-2);
+    }
+    
+    .timer-control-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Active state for running timer */
+.timer-display-container.running {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: var(--shadow-xl);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(34, 197, 94, 0.5);
+    }
+}
+
+/* Header Timer */
+.header-timer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    background: rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--border-radius-lg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-left: auto;
+    margin-right: var(--spacing-3);
+}
+
+.header-time {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.header-control-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-control-btn:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.header-control-btn:active {
+    transform: scale(0.95);
+}
+
+.header-control-btn#headerStartBtn:hover {
+    color: var(--success-color);
+    background: var(--success-bg);
+}
+
+.header-control-btn#headerPauseBtn:hover {
+    color: var(--warning-color);
+    background: var(--warning-bg);
+}
+
+.header-control-btn#headerResetBtn:hover {
+    color: var(--danger-color);
+    background: var(--danger-bg);
+}
+
+.header-control-btn#headerSoundToggle:hover {
+    color: var(--primary-color);
+    background: var(--primary-bg);
+}
+
+.header-control-btn#headerSoundToggle.muted {
+    color: var(--gray-500);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.header-control-btn#headerSoundToggle.muted:hover {
+    color: var(--danger-color);
+    background: var(--danger-bg);
+}
+
+/* Responsive Design for Large Timer */
+@media (max-width: 768px) {
+    .pomodoro-container {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+
+    .pomodoro-controls {
+        flex-direction: row;
+        justify-content: center;
+        min-width: auto;
+    }
+
+    .pomodoro-controls .btn {
+        flex: 1;
+        max-width: 150px;
+    }
+
+    .timer-display-container {
+        padding: var(--spacing-8) var(--spacing-6);
+        min-height: 250px;
+    }
+    
+    .timer-display {
+        font-size: 4rem;
+    }
+    
+    .timer-label {
+        font-size: var(--font-size-lg);
+    }
+    
+    .timer-controls {
+        gap: var(--spacing-3);
+        padding: var(--spacing-3);
+    }
+    
+    .timer-control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1rem;
+    }
+
+    .pomodoro-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .pomodoro-stats {
+        flex-direction: column;
+        gap: var(--spacing-4);
+        align-items: center;
+    }
+
+    .audio-options {
+        flex-direction: column;
+        gap: var(--spacing-3);
+    }
+
+    .custom-audio-section {
+        padding: var(--spacing-4);
+    }
+
+    .upload-zone {
+        padding: var(--spacing-6);
+    }
+
+    .upload-zone i {
+        font-size: 2rem;
+    }
+
+    .audio-actions {
+        flex-direction: column;
+    }
+
+    .audio-actions .btn {
+        width: 100%;
+    }
+
+    .pomodoro-header {
+        padding: var(--spacing-3) var(--spacing-4);
+        flex-wrap: wrap;
+        gap: var(--spacing-2);
+    }
+    
+    .pomodoro-header h2 {
+        font-size: var(--font-size-base);
+    }
+    
+    .header-timer {
+        gap: var(--spacing-2);
+        padding: var(--spacing-1) var(--spacing-2);
+        margin-left: auto;
+        margin-right: var(--spacing-2);
+    }
+    
+    .header-time {
+        font-size: var(--font-size-base);
+    }
+    
+    .header-control-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+    
+    .pomodoro-container {
+        padding: var(--spacing-4);
+    }
+}
+
+@media (max-width: 480px) {
+    .timer-display-container {
+        padding: var(--spacing-6) var(--spacing-4);
+        min-height: 200px;
+    }
+    
+    .timer-display {
+        font-size: 3rem;
+    }
+    
+    .timer-label {
+        font-size: var(--font-size-base);
+    }
+    
+    .timer-controls {
+        gap: var(--spacing-2);
+        padding: var(--spacing-2);
+    }
+    
+    .timer-control-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 0.9rem;
+    }
+    
+    .header-timer {
+        gap: var(--spacing-1);
+        padding: var(--spacing-1);
+    }
+    
+    .header-time {
+        font-size: var(--font-size-sm);
+    }
+    
+    .header-control-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.6rem;
     }
 } 
