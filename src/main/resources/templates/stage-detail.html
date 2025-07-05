@@ -14,6 +14,52 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <style>
+    .tab-container {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid #e0e0e0;
+        margin-bottom: 18px;
+    }
+    .tab-btn {
+        background: none;
+        border: none;
+        outline: none;
+        padding: 10px 28px;
+        font-size: 1.05em;
+        color: var(--gray-600);
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 2px solid transparent;
+        transition: background 0.2s, color 0.2s, border 0.2s;
+    }
+    .tab-btn.active {
+        background: #fff;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        font-weight: 600;
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
+    }
+    .tab-btn:hover:not(.active) {
+        background: #f5f5f5;
+        color: var(--primary-color);
+    }
+    /* Hiệu ứng hoàn thành nhiệm vụ */
+    .task-complete-animate {
+        animation: taskCompletePop 0.9s cubic-bezier(.23,1.12,.62,1.01);
+        box-shadow: 0 0 16px 2px #4ade80;
+        background: linear-gradient(90deg, #e0ffe6 0%, #f0fff4 100%);
+        border-radius: 10px;
+    }
+    @keyframes taskCompletePop {
+        0% { transform: scale(1); background: #fff; }
+        20% { transform: scale(1.08); background: #bbf7d0; }
+        40% { transform: scale(1.13); background: #6ee7b7; }
+        60% { transform: scale(1.08); background: #bbf7d0; }
+        80% { transform: scale(1.03); background: #e0ffe6; }
+        100% { transform: scale(1); background: linear-gradient(90deg, #e0ffe6 0%, #f0fff4 100%); }
+    }
+    </style>
     
     <!-- Google Drive API -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -59,10 +105,10 @@
                 <div class="stage-header">
                     <div class="stage-info">
                         <div class="stage-status-badge" th:class="${'stage-status-badge ' + stage.status.toLowerCase()}">
-                            <i th:class="${stage.status == 'COMPLETED' ? 'fas fa-check-circle' : 
-                                          stage.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
-                            <span th:text="${stage.status == 'COMPLETED' ? 'Hoàn thành' : 
-                                           stage.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa bắt đầu'}">Trạng thái</span>
+                                                        <i th:class="${stage.status == 'COMPLETED' ? 'fas fa-check-circle' :
+                                          stage.status == 'IN_PROGRESS' ? 'fas fa-clock' : stage.status == 'NOT_STARTED' ? 'fas fa-pause-circle' : 'fas fa-pause-circle'}"></i>
+                            <span th:text="${stage.status == 'COMPLETED' ? 'Hoàn thành' :
+                                           stage.status == 'IN_PROGRESS' ? 'Đang thực hiện' : stage.status == 'NOT_STARTED' ? 'Chưa bắt đầu' : stage.status}">Trạng thái</span>
                         </div>
                         <h1 class="stage-title" th:text="${stage.name}">Tên giai đoạn</h1>
                         <p class="stage-description" th:text="${stage.description}">Mô tả giai đoạn</p>
@@ -149,28 +195,15 @@
 
                 <!-- Pomodoro Timer -->
                 <div class="pomodoro-section">
-                    <div class="pomodoro-header" onclick="togglePomodoroDropdown()" style="cursor: pointer;" 
-                         title="Click để mở/đóng Pomodoro Timer" role="button" tabindex="0"
-                         onkeypress="if(event.key==='Enter'||event.key===' ') togglePomodoroDropdown()">
-                        <h2><i class="fas fa-clock"></i> Pomodoro Timer</h2>
-                        <div class="header-timer" id="headerTimer" style="display: none;">
-                            <span class="header-time" id="headerTime">25:00</span>
-                            <div class="header-controls">
-                                <button class="header-control-btn" id="headerStartBtn" onclick="event.stopPropagation(); startPomodoro();" title="Bắt đầu">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                <button class="header-control-btn" id="headerPauseBtn" onclick="event.stopPropagation(); pausePomodoro();" style="display: none;" title="Tạm dừng">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                <button class="header-control-btn" id="headerResetBtn" onclick="event.stopPropagation(); resetPomodoro();" title="Đặt lại">
-                                    <i class="fas fa-redo"></i>
-                                </button>
-                                <button class="header-control-btn" id="headerSoundToggle" onclick="event.stopPropagation(); toggleSound();" title="Bật/Tắt âm thanh">
-                                    <i class="fas fa-volume-up"></i>
-                                </button>
-                            </div>
+                    <div class="pomodoro-header" style="display: flex; align-items: center; gap: 12px;">
+                        <div onclick="togglePomodoroDropdown()" style="cursor: pointer; flex: 1;" 
+                             title="Click để mở/đóng Pomodoro Timer" role="button" tabindex="0"
+                             onkeypress="if(event.key==='Enter'||event.key===' ') togglePomodoroDropdown()">
+                            <span style="font-size: 1.2em; font-weight: 600;"><i class="fas fa-clock"></i> Pomodoro Timer</span>
                         </div>
-                        <i class="fas fa-chevron-down" id="pomodoroDropdownIcon" aria-label="Toggle dropdown"></i>
+                        <button class="btn btn-icon" id="pomodoroPopupBtn" title="Hiển thị Pomodoro dưới dạng cửa sổ nổi" onclick="showPopupTimer()" style="background: var(--primary-color); color: #fff; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; box-shadow: 0 2px 8px rgba(0,0,0,0.07); border: none; margin-left: 8px;">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
                     </div>
                     
                     <div class="pomodoro-container" id="pomodoroContainer" style="display: none;">
@@ -344,21 +377,22 @@
                         </div>
                     </div>
 
-                    <!-- Tasks List -->
-                    <div class="tasks-list" id="tasksList">
-                        <div th:if="${#lists.isEmpty(stage.tasks)}" class="empty-tasks">
+                    <!-- Tabs -->
+                    <div class="tab-container" style="margin-bottom: 18px;">
+                        <button class="tab-btn active" id="tab-uncompleted" type="button" onclick="showTaskTab('uncompleted')">Nhiệm vụ chưa hoàn thành</button>
+                        <button class="tab-btn" id="tab-completed" type="button" onclick="showTaskTab('completed')">Nhiệm vụ đã hoàn thành</button>
+                    </div>
+
+                    <!-- Tasks List: Chưa hoàn thành -->
+                    <div class="tasks-list" id="tasksListUncompleted" style="display: block;">
+                        <h3 style="margin-bottom:8px; color:var(--gray-700); font-size:1.1em;">Nhiệm vụ chưa hoàn thành</h3>
+                        <div th:if="${#lists.isEmpty(stage.tasks.?[status != 'COMPLETED'])}" class="empty-tasks">
                             <div class="empty-icon">
                                 <i class="fas fa-clipboard-list"></i>
                             </div>
-                            <h3>Chưa có nhiệm vụ nào</h3>
-                            <p>Tạo nhiệm vụ đầu tiên để bắt đầu thực hiện giai đoạn này</p>
-                            <a th:href="@{'/tasks/create?stageId=' + ${stage.id}}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i>
-                                Thêm nhiệm vụ đầu tiên
-                            </a>
+                            <h4>Không có nhiệm vụ nào chưa hoàn thành</h4>
                         </div>
-
-                        <div th:each="task : ${stage.tasks}" class="task-item fade-in" th:data-task-id="${task.id}" 
+                        <div th:each="task : ${stage.tasks}" th:if="${task.status != 'COMPLETED'}" class="task-item fade-in" th:data-task-id="${task.id}" 
                              title="Click để thay đổi trạng thái nhiệm vụ">
                             <div class="task-checkbox">
                                 <input type="checkbox" th:checked="${task.status == 'COMPLETED'}" 
@@ -381,16 +415,90 @@
                                     </div>
                                 </div>
                                 <p class="task-description" th:text="${task.description}">Mô tả nhiệm vụ</p>
+                                <div class="task-dates" style="font-size:0.97em; color:var(--gray-600); margin-bottom:2px;">
+                                    <span th:if="${task.startDate != null}" th:text="'Bắt đầu: ' + ${#temporals.format(task.startDate, 'dd/MM/yyyy')}"></span>
+                                    <span th:if="${task.endDate != null}" th:text="' | Kết thúc: ' + ${#temporals.format(task.endDate, 'dd/MM/yyyy')}"></span>
+                                </div>
                                 <div class="task-status" th:class="${'task-status ' + task.status.toLowerCase()}">
                                     <i th:class="${task.status == 'COMPLETED' ? 'fas fa-check-circle' : 
-                                                  task.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
+                                                  task.status == 'IN_PROGRESS' ? 'fas fa-clock' : task.status == 'NOT_STARTED' ? 'fas fa-pause-circle' : 'fas fa-pause-circle'}"></i>
                                     <span th:text="${task.status == 'COMPLETED' ? 'Hoàn thành' : 
-                                                   task.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa làm'}">Trạng thái</span>
+                                                   task.status == 'IN_PROGRESS' ? 'Đang thực hiện' : task.status == 'NOT_STARTED' ? 'Chưa bắt đầu' : task.status}">Trạng thái</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tasks List: Đã hoàn thành -->
+                    <div class="tasks-list" id="tasksListCompleted" style="display: none; margin-top:32px;">
+                        <h3 style="margin-bottom:8px; color:var(--gray-700); font-size:1.1em;">Nhiệm vụ đã hoàn thành</h3>
+                        <th:block th:if="${#lists.isEmpty(stage.tasks.?[status == 'COMPLETED'])}">
+                            <div class="empty-tasks">
+                                <div class="empty-icon">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <h4>Chưa có nhiệm vụ nào hoàn thành</h4>
+                            </div>
+                        </th:block>
+                        <th:block th:unless="${#lists.isEmpty(stage.tasks.?[status == 'COMPLETED'])}">
+                            <div th:each="task : ${stage.tasks}" th:if="${task.status == 'COMPLETED'}" class="task-item fade-in completed" th:data-task-id="${task.id}" 
+                                 title="Click để thay đổi trạng thái nhiệm vụ">
+                                <div class="task-checkbox">
+                                    <input type="checkbox" th:checked="${task.status == 'COMPLETED'}" 
+                                           th:onchange="'toggleTaskStatus(' + ${task.id} + ', this.checked)'" 
+                                           class="task-checkbox-input"
+                                           title="Click để thay đổi trạng thái nhiệm vụ">
+                                    <div class="checkbox-custom"></div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-header">
+                                        <h3 class="task-title" th:text="${task.name}">Tên nhiệm vụ</h3>
+                                        <div class="task-actions">
+                                            <button class="action-btn" th:onclick="'editTask(' + ${task.id} + ')'" title="Chỉnh sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="action-btn" th:onclick="'deleteTask(' + ${task.id} + ')'" title="Xóa">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="task-description" th:text="${task.description}">Mô tả nhiệm vụ</p>
+                                    <div class="task-dates" style="font-size:0.97em; color:var(--gray-600); margin-bottom:2px;">
+                                        <span th:if="${task.startDate != null}" th:text="'Bắt đầu: ' + ${#temporals.format(task.startDate, 'dd/MM/yyyy')}"></span>
+                                        <span th:if="${task.endDate != null}" th:text="' | Kết thúc: ' + ${#temporals.format(task.endDate, 'dd/MM/yyyy')}"></span>
+                                    </div>
+                                    <div class="task-status" th:class="${'task-status ' + task.status.toLowerCase()}">
+                                        <i th:class="${task.status == 'COMPLETED' ? 'fas fa-check-circle' : 
+                                                      task.status == 'IN_PROGRESS' ? 'fas fa-clock' : task.status == 'NOT_STARTED' ? 'fas fa-pause-circle' : 'fas fa-pause-circle'}"></i>
+                                        <span th:text="${task.status == 'COMPLETED' ? 'Hoàn thành' : 
+                                                       task.status == 'IN_PROGRESS' ? 'Đang thực hiện' : task.status == 'NOT_STARTED' ? 'Chưa bắt đầu' : task.status}">Trạng thái</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </th:block>
+                    </div>
                 </div>
+
+                <script>
+                function showTaskTab(tab) {
+                    const tabUncompleted = document.getElementById('tab-uncompleted');
+                    const tabCompleted = document.getElementById('tab-completed');
+                    const listUncompleted = document.getElementById('tasksListUncompleted');
+                    const listCompleted = document.getElementById('tasksListCompleted');
+                    if (tab === 'uncompleted') {
+                        tabUncompleted.classList.add('active');
+                        tabCompleted.classList.remove('active');
+                        listUncompleted.style.display = 'block';
+                        listCompleted.style.display = 'none';
+                    } else {
+                        tabUncompleted.classList.remove('active');
+                        tabCompleted.classList.add('active');
+                        listUncompleted.style.display = 'none';
+                        listCompleted.style.display = 'block';
+                    }
+                }
+                </script>
+
             </div>
         </div>
     </div>
@@ -432,6 +540,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Popup Timer sẽ được tạo động bằng JavaScript -->
 
     <!-- Thêm các file JS đã tách ở cuối body -->
     <script src="/js/toast.js"></script>

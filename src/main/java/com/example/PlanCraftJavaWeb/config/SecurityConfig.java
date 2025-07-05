@@ -20,8 +20,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/register", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/register", "/css/**", "/js/**", "/images/**", "/api/goals/ai-roadmap", "/api/goals/ai-save").permitAll()
                 .anyRequest().authenticated()
+            )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
             )
             .formLogin(form -> form
                 .loginPage("/login")

@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/css/utilities.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
     <!-- Navigation -->
@@ -132,19 +134,20 @@
 
                 <!-- Goals Grid -->
                 <div class="goals-grid" id="goalsGrid">
-                    <div th:each="goal : ${goals}" class="goal-card fade-in" th:data-status="${goal.status}" th:data-goal-id="${goal.id}">
+                    <div th:each="goal : ${goals}" class="goal-card fade-in" th:data-status="${goal.status}" th:data-goal-id="${goal.id}"
+                         th:onclick="|window.location.href='/goals/' + ${goal.id}|" style="cursor: pointer;">
                         <div class="goal-header">
                             <div class="goal-status-badge" th:class="${'goal-status-badge ' + goal.status.toLowerCase()}">
                                 <i th:class="${goal.status == 'COMPLETED' ? 'fas fa-check-circle' : 
-                                              goal.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
+                                              goal.status == 'IN_PROGRESS' ? 'fas fa-clock' : goal.status == 'NOT_STARTED' ? 'fas fa-pause-circle' : 'fas fa-pause-circle'}"></i>
                                 <span th:text="${goal.status == 'COMPLETED' ? 'Hoàn thành' : 
-                                               goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa bắt đầu'}">Trạng thái</span>
+                                               goal.status == 'IN_PROGRESS' ? 'Đang thực hiện' : goal.status == 'NOT_STARTED' ? 'Chưa bắt đầu' : goal.status}">Trạng thái</span>
                             </div>
                             <div class="goal-actions">
-                                <button class="action-btn" th:onclick="'editGoal(' + ${goal.id} + ')'" title="Chỉnh sửa">
+                                <button class="action-btn" th:onclick="'editGoal(' + ${goal.id} + ')'" title="Chỉnh sửa" onclick="event.stopPropagation();">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="action-btn" th:onclick="'deleteGoal(' + ${goal.id} + ')'" title="Xóa">
+                                <button class="action-btn" th:onclick="'deleteGoal(' + ${goal.id} + ')'" title="Xóa" onclick="event.stopPropagation();">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -160,10 +163,7 @@
                                     <i class="fas fa-calendar"></i>
                                     <span th:text="'Hạn: ' + ${#temporals.format(goal.deadline, 'dd/MM/yyyy')}">Deadline</span>
                                 </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-layer-group"></i>
-                                    <span th:text="${#lists.size(goal.stages)} + ' giai đoạn'">Giai đoạn</span>
-                                </div>
+                                <!-- Bỏ hiển thị số lượng giai đoạn -->
                                 <div class="meta-item">
                                     <i class="fas fa-tasks"></i>
                                     <span th:text="${goal.totalTasks} + ' nhiệm vụ'">Nhiệm vụ</span>
@@ -183,16 +183,7 @@
                             </div>
                         </div>
                         
-                        <div class="goal-footer">
-                            <a th:href="@{'/goals/' + ${goal.id}}" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-eye"></i>
-                                Xem chi tiết
-                            </a>
-                            <a th:href="@{'/stages/create?goalId=' + ${goal.id}}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-plus"></i>
-                                Thêm giai đoạn
-                            </a>
-                        </div>
+                        <!-- Bỏ goal-footer chứa nút xem chi tiết và thêm giai đoạn -->
                     </div>
                 </div>
 
@@ -224,44 +215,49 @@
     <script src="/js/toast.js"></script>
     <script src="/js/user.js"></script>
     <script>
+        // Global variables for pagination
+        let currentPage = 1;
+        const goalsPerPage = 6;
+        let isSearching = false;
+        let isFiltering = false;
+
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize goals display
-            const goalsPerPage = 6;
-            let currentPage = 1;
-            const allGoals = document.querySelectorAll('.goal-card');
-            const totalGoals = allGoals.length;
-            
-            // Show initial goals
-            showGoals(1, goalsPerPage);
+            initializeGoalsDisplay();
             
             // Search functionality
             const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const goalCards = document.querySelectorAll('.goal-card');
-                
-                goalCards.forEach(card => {
-                    const title = card.querySelector('.goal-title').textContent.toLowerCase();
-                    const reason = card.querySelector('.goal-reason').textContent.toLowerCase();
-                    const description = card.querySelector('.goal-description').textContent.toLowerCase();
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    isSearching = searchTerm.length > 0;
                     
-                    if (title.includes(searchTerm) || reason.includes(searchTerm) || description.includes(searchTerm)) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
-                    }
+                    const goalCards = document.querySelectorAll('.goal-card');
+                    
+                    goalCards.forEach(card => {
+                        const title = card.querySelector('.goal-title').textContent.toLowerCase();
+                        const reason = card.querySelector('.goal-reason').textContent.toLowerCase();
+                        const description = card.querySelector('.goal-description').textContent.toLowerCase();
+                        
+                        if (title.includes(searchTerm) || reason.includes(searchTerm) || description.includes(searchTerm)) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    
+                    // Reset pagination when searching
+                    currentPage = 1;
+                    updateLoadMoreButton();
                 });
-                
-                // Reset pagination when searching
-                currentPage = 1;
-                updateLoadMoreButton();
-            });
+            }
 
             // Filter functionality
             const filterBtns = document.querySelectorAll('.filter-btn');
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const filter = this.dataset.filter;
+                    isFiltering = filter !== 'all';
                     
                     // Update active button
                     filterBtns.forEach(b => b.classList.remove('active'));
@@ -296,40 +292,112 @@
             });
         });
 
+        // Initialize goals display
+        function initializeGoalsDisplay() {
+            const allGoals = document.querySelectorAll('.goal-card');
+            const totalGoals = allGoals.length;
+            
+            console.log(`Total goals found: ${totalGoals}`);
+            
+            // Show initial goals
+            showGoals(1, goalsPerPage);
+            updateLoadMoreButton();
+        }
+
         // Show goals with pagination
         function showGoals(page, perPage) {
             const goalCards = document.querySelectorAll('.goal-card');
             const startIndex = (page - 1) * perPage;
             const endIndex = startIndex + perPage;
             
+            console.log(`Showing goals from ${startIndex} to ${endIndex} (page ${page})`);
+            
             goalCards.forEach((card, index) => {
                 if (index >= startIndex && index < endIndex) {
                     card.style.display = 'block';
                     card.style.animationDelay = ((index - startIndex) * 0.1) + 's';
-                } else if (index >= endIndex) {
+                    console.log(`Showing goal ${index + 1}`);
+                } else {
                     card.style.display = 'none';
+                    console.log(`Hiding goal ${index + 1}`);
                 }
             });
         }
 
         // Load more goals
         function loadMoreGoals() {
-            const goalsPerPage = 6;
-            currentPage++;
-            showGoals(currentPage, goalsPerPage);
+            console.log('Load more goals clicked');
+            console.log(`Current page: ${currentPage}, Is searching: ${isSearching}, Is filtering: ${isFiltering}`);
+            
+            if (isSearching || isFiltering) {
+                // If searching or filtering, show all remaining visible goals
+                const visibleGoals = Array.from(document.querySelectorAll('.goal-card')).filter(card => 
+                    card.style.display !== 'none'
+                );
+                
+                const startIndex = currentPage * goalsPerPage;
+                const endIndex = startIndex + goalsPerPage;
+                
+                console.log(`Showing filtered goals from ${startIndex} to ${endIndex}`);
+                
+                visibleGoals.forEach((card, index) => {
+                    if (index >= startIndex && index < endIndex) {
+                        card.style.display = 'block';
+                    }
+                });
+                
+                currentPage++;
+            } else {
+                // Normal pagination - show next page of goals
+                const allGoals = document.querySelectorAll('.goal-card');
+                const startIndex = currentPage * goalsPerPage;
+                const endIndex = startIndex + goalsPerPage;
+                
+                console.log(`Showing goals from ${startIndex} to ${endIndex}`);
+                
+                allGoals.forEach((card, index) => {
+                    if (index >= startIndex && index < endIndex) {
+                        card.style.display = 'block';
+                    }
+                });
+                
+                currentPage++;
+            }
+            
             updateLoadMoreButton();
         }
 
         // Update load more button
         function updateLoadMoreButton() {
             const loadMoreBtn = document.getElementById('loadMoreBtn');
-            const visibleGoals = document.querySelectorAll('.goal-card[style*="display: block"]').length;
-            const totalGoals = document.querySelectorAll('.goal-card').length;
+            if (!loadMoreBtn) {
+                console.log('Load more button not found');
+                return;
+            }
             
-            if (visibleGoals >= totalGoals) {
-                loadMoreBtn.style.display = 'none';
+            const totalGoals = document.querySelectorAll('.goal-card').length;
+            const visibleGoals = Array.from(document.querySelectorAll('.goal-card')).filter(card => 
+                card.style.display !== 'none'
+            ).length;
+            
+            let shouldShowButton = false;
+            
+            if (isSearching || isFiltering) {
+                // Show button if there are hidden goals when searching/filtering
+                shouldShowButton = visibleGoals < totalGoals && visibleGoals > 0;
             } else {
+                // Show button if there are more goals than currently displayed
+                shouldShowButton = totalGoals > visibleGoals;
+            }
+            
+            console.log(`Total goals: ${totalGoals}, Visible goals: ${visibleGoals}, Should show button: ${shouldShowButton}`);
+            
+            if (shouldShowButton) {
                 loadMoreBtn.style.display = 'block';
+                console.log('Showing load more button');
+            } else {
+                loadMoreBtn.style.display = 'none';
+                console.log('Hiding load more button');
             }
         }
 
@@ -346,6 +414,11 @@
     </script>
 
     <style>
+        /* Hide all goal cards by default, show only through JavaScript */
+        .goal-card {
+            display: none;
+        }
+        
         /* Additional styles for improved dashboard */
         .stats-grid {
             display: grid;

@@ -126,10 +126,10 @@
                     <div th:each="stage : ${stages}" class="stage-card fade-in" th:data-status="${stage.status}">
                         <div class="stage-header">
                             <div class="stage-status" th:class="${'stage-status ' + stage.status.toLowerCase()}">
-                                <i th:class="${stage.status == 'COMPLETED' ? 'fas fa-check-circle' : 
-                                              stage.status == 'IN_PROGRESS' ? 'fas fa-clock' : 'fas fa-pause-circle'}"></i>
-                                <span th:text="${stage.status == 'COMPLETED' ? 'Hoàn thành' : 
-                                               stage.status == 'IN_PROGRESS' ? 'Đang thực hiện' : 'Chưa bắt đầu'}">Trạng thái</span>
+                                                                <i th:class="${stage.status == 'COMPLETED' ? 'fas fa-check-circle' :
+                                              stage.status == 'IN_PROGRESS' ? 'fas fa-clock' : stage.status == 'NOT_STARTED' ? 'fas fa-pause-circle' : 'fas fa-pause-circle'}"></i>
+                                <span th:text="${stage.status == 'COMPLETED' ? 'Hoàn thành' :
+                                               stage.status == 'IN_PROGRESS' ? 'Đang thực hiện' : stage.status == 'NOT_STARTED' ? 'Chưa bắt đầu' : stage.status}">Trạng thái</span>
                             </div>
                             <div class="stage-actions">
                                 <button class="action-btn" th:onclick="'editStage(' + ${stage.id} + ')'" title="Chỉnh sửa">

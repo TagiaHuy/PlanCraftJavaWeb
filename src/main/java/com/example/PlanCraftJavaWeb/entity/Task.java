@@ -20,6 +20,11 @@ public class Task {
     private String name;
     private String description;
     private String status;
+    private java.time.LocalDate startDate;
+    private java.time.LocalDate endDate;
+
+    @Transient
+    private String date;
 
     // Getters and setters
     public Long getId() { return id; }
@@ -32,4 +37,10 @@ public class Task {
     public void setDescription(String description) { this.description = description; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public java.time.LocalDate getStartDate() { return startDate; }
+    public void setStartDate(java.time.LocalDate startDate) { this.startDate = startDate; }
+    public java.time.LocalDate getEndDate() { return endDate; }
+    public void setEndDate(java.time.LocalDate endDate) { this.endDate = endDate; }
+    public String getDate() { return date; }
+    public void setDate(String date) { this.date = date; }
 } 

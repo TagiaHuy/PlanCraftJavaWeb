@@ -1021,4 +1021,185 @@
         height: 24px;
         font-size: 0.6rem;
     }
+}
+
+/* Popup Timer */
+.popup-timer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    animation: slideInUp 0.3s ease-out;
+    pointer-events: auto;
+}
+
+.popup-timer-content {
+    background: white;
+    border-radius: var(--border-radius-xl);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--gray-200);
+    min-width: 280px;
+    max-width: 320px;
+    overflow: hidden;
+    position: relative;
+}
+
+.popup-timer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-4);
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+}
+
+.popup-timer-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+}
+
+.popup-close-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.popup-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.popup-timer-body {
+    padding: var(--spacing-6);
+    text-align: center;
+}
+
+.popup-time-display {
+    font-size: 3rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    color: var(--gray-800);
+    margin-bottom: var(--spacing-2);
+    line-height: 1;
+}
+
+.popup-timer-label {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-4);
+}
+
+.popup-timer-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.popup-control-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.popup-control-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.popup-control-btn#popupStartBtn:hover {
+    background: var(--success-color);
+}
+
+.popup-control-btn#popupPauseBtn:hover {
+    background: var(--warning-color);
+}
+
+.popup-control-btn#popupResetBtn:hover {
+    background: var(--danger-color);
+}
+
+.popup-control-btn#popupSoundToggle:hover {
+    background: var(--primary-color);
+}
+
+.popup-control-btn#popupSoundToggle.muted {
+    color: var(--gray-500);
+}
+
+.popup-control-btn#popupSoundToggle.muted:hover {
+    background: var(--danger-color);
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(100px);
+    }
+}
+
+.popup-timer.hiding {
+    animation: slideOutDown 0.3s ease-in;
+}
+
+/* Responsive for popup */
+@media (max-width: 480px) {
+    .popup-timer {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .popup-timer-content {
+        min-width: auto;
+        max-width: none;
+    }
+    
+    .popup-time-display {
+        font-size: 2.5rem;
+    }
+    
+    .popup-control-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
 } 

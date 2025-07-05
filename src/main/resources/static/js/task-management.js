@@ -1,86 +1,67 @@
 // Task Management Functions
 
 // Toggle task status (AJAX)
-window.toggleTaskStatus = function(taskId, checked) {
-    const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
-    const isCurrentlyCompleted = taskItem.classList.contains('completed');
-    const checkbox = taskItem.querySelector('.task-checkbox-input');
-    
-    // Update checkbox state immediately for better UX
-    checkbox.checked = checked;
-    
-    const status = checked ? 'COMPLETED' : 'NOT_STARTED';
+function toggleTaskStatus(taskId, checked) {
+    const checkbox = document.querySelector(`[data-task-id="${taskId}"] .task-checkbox-input`);
+    if (!checkbox) return;
+    checkbox.disabled = true;
+
+    // Lấy CSRF token từ meta tag
     const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-    
-    // Show loading state
-    checkbox.disabled = true;
-    
-    fetch(`/api/tasks/${taskId}/status?status=${encodeURIComponent(status)}`, {
+
+    fetch(`/api/tasks/${taskId}/status?status=${checked ? 'COMPLETED' : 'NOT_STARTED'}`, {
         method: 'PATCH',
         headers: {
-            'X-Requested-With': 'XMLHttpRequest',
             [csrfHeader]: csrfToken
         }
     })
-    .then(res => {
-        if (res.ok) {
-            return res.json();
-        }
-        throw new Error('Network response was not ok');
-    })
+    .then(res => res.json())
     .then(updatedTask => {
-        // Update task item appearance
+        // Di chuyển task sang đúng mục
+        const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (!taskItem) return;
+        // Xóa khỏi mục cũ
+        taskItem.parentNode.removeChild(taskItem);
+        // Cập nhật class trạng thái
+        if (checked) {
+            taskItem.classList.add('completed');
+            document.getElementById('tasksListCompleted').appendChild(taskItem);
+            // Hiệu ứng hoàn thành: nhấp nháy màu xanh và scale up
+            taskItem.classList.add('task-complete-animate');
+            setTimeout(() => {
+                taskItem.classList.remove('task-complete-animate');
+            }, 900);
+        } else {
+            taskItem.classList.remove('completed');
+            document.getElementById('tasksListUncompleted').appendChild(taskItem);
+            // Bỏ tự động chuyển tab
+        }
+        // Cập nhật lại checkbox, icon, text trạng thái
+        checkbox.checked = checked;
         const taskStatus = taskItem.querySelector('.task-status');
         const taskStatusIcon = taskStatus.querySelector('i');
         const taskStatusText = taskStatus.querySelector('span');
-        
-        if (updatedTask.status === 'COMPLETED') {
-            taskItem.classList.add('completed');
+        if (checked) {
             taskStatusIcon.className = 'fas fa-check-circle';
             taskStatusText.textContent = 'Hoàn thành';
             taskStatus.className = 'task-status completed';
-            
-            // Add success animation
-            taskItem.style.animation = 'taskCompleted 0.5s ease-out';
-            setTimeout(() => {
-                taskItem.style.animation = '';
-            }, 500);
-            
-            // Show success message
-            showToast('Nhiệm vụ đã được đánh dấu hoàn thành!', 'success');
         } else {
-            taskItem.classList.remove('completed');
             taskStatusIcon.className = 'fas fa-pause-circle';
             taskStatusText.textContent = 'Chưa làm';
             taskStatus.className = 'task-status not_started';
-            
-            // Add uncheck animation
-            taskItem.style.animation = 'taskUnchecked 0.3s ease-out';
-            setTimeout(() => {
-                taskItem.style.animation = '';
-            }, 300);
-            
-            // Show info message
-            showToast('Nhiệm vụ đã được đánh dấu chưa hoàn thành', 'info');
         }
-        
-        // Update progress statistics using data from database
+        // Cập nhật progress
         updateProgressFromDatabase(updatedTask.stageProgress);
-        
-        // Re-enable checkbox
         checkbox.disabled = false;
     })
     .catch(error => {
         console.error('Error updating task status:', error);
-        // Revert checkbox state if update failed
         checkbox.checked = !checked;
         checkbox.disabled = false;
-        
-        // Show error message
         showToast('Có lỗi xảy ra khi cập nhật trạng thái nhiệm vụ. Vui lòng thử lại.', 'error');
     });
-};
+}
 
 // Update progress statistics using data from database
 function updateProgressFromDatabase(progressPercentage) {
@@ -176,8 +157,14 @@ function editTask(taskId) {
 // Delete task
 function deleteTask(taskId) {
     if (confirm('Bạn có chắc chắn muốn xóa nhiệm vụ này?')) {
+        // Lấy CSRF token từ meta tag
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
         fetch(`/api/tasks/${taskId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                [csrfHeader]: csrfToken
+            }
         }).then(response => {
             if (response.ok) {
                 const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);

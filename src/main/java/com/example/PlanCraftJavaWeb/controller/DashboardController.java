@@ -102,7 +102,7 @@ public class DashboardController {
         goal.setDeadline(LocalDate.parse(deadline));
         goal.setReason(reason);
         goal.setDescription(description);
-        goal.setStatus("chưa bắt đầu");
+        goal.setStatus("NOT_STARTED");
         goalService.saveGoal(goal);
         return "redirect:/dashboard";
     }
@@ -163,13 +163,17 @@ public class DashboardController {
     @PostMapping("/tasks/create")
     public String createTask(@RequestParam Long stageId,
                              @RequestParam String name,
-                             @RequestParam String description) {
+                             @RequestParam String description,
+                             @RequestParam String startDate,
+                             @RequestParam String endDate) {
         Task task = new Task();
         Stage stage = stageService.getStageById(stageId).orElse(null);
         task.setStage(stage);
         task.setName(name);
         task.setDescription(description);
-        task.setStatus("chưa làm");
+        task.setStatus("NOT_STARTED");
+        task.setStartDate(java.time.LocalDate.parse(startDate));
+        task.setEndDate(java.time.LocalDate.parse(endDate));
         taskService.saveTask(task);
         return "redirect:/stages/" + stageId;
     }

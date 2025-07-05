@@ -100,9 +100,9 @@
                             <div class="form-group">
                                 <label class="form-label">
                                     <i class="fas fa-calendar-check"></i>
-                                    Deadline
+                                    Ngày kết thúc
                                 </label>
-                                <input type="date" name="dueDate" class="form-input">
+                                <input type="date" name="endDate" class="form-input">
                             </div>
                         </div>
 
@@ -184,24 +184,21 @@
             
             // Set minimum date to today for start date
             const startDateInput = document.querySelector('input[name="startDate"]');
-            const dueDateInput = document.querySelector('input[name="dueDate"]');
+            const endDateInput = document.querySelector('input[name="endDate"]');
             const today = new Date().toISOString().split('T')[0];
             
             if (startDateInput) {
                 startDateInput.min = today;
             }
             
-            if (dueDateInput) {
-                dueDateInput.min = today;
+            if (endDateInput) {
+                endDateInput.min = today;
             }
             
-            // Update due date minimum when start date changes
-            if (startDateInput && dueDateInput) {
+            // Update end date minimum when start date changes
+            if (startDateInput && endDateInput) {
                 startDateInput.addEventListener('change', function() {
-                    dueDateInput.min = this.value;
-                    if (dueDateInput.value && dueDateInput.value < this.value) {
-                        dueDateInput.value = this.value;
-                    }
+                    endDateInput.min = this.value;
                 });
             }
         });

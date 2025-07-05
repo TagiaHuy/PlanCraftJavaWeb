@@ -216,13 +216,34 @@ function updateGoalStatus(goalId, status) {
 }
 
 function deleteGoal(goalId) {
-    deleteEntity(
-        goalId, 
-        'mục tiêu', 
-        '[data-goal-id="{id}"]', 
-        'Xóa mục tiêu thành công!'
-    );
+    if (confirm('Bạn có chắc chắn muốn xóa mục tiêu này?')) {
+        // Lấy CSRF token từ meta tag
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        fetch(`/api/goals/${goalId}`, {
+            method: 'DELETE',
+            headers: {
+                [csrfHeader]: csrfToken
+            }
+        }).then(response => {
+            if (response.ok) {
+                if (typeof showToast === 'function') {
+                    showToast('Xóa mục tiêu thành công!', 'success');
+                }
+                // Ẩn mục tiêu khỏi giao diện
+                const goalCard = document.querySelector(`[data-goal-id="${goalId}"]`);
+                if (goalCard) {
+                    goalCard.style.display = 'none';
+                }
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('Xóa mục tiêu thất bại!', 'error');
+                }
+            }
+        });
+    }
 }
+window.deleteGoal = deleteGoal;
 
 // Stage management functions
 function updateStageStatus(stageId, status) {
@@ -323,6 +344,218 @@ function animateProgressBars() {
     });
 }
 
+// Popup/Modal Management
+class PopupManager {
+    constructor() {
+        this.activePopups = new Map();
+        this.popupCounter = 0;
+    }
+
+    // Tạo modal popup
+    createModal(title, content, options = {}) {
+        const modalId = `modal-${++this.popupCounter}`;
+        const modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal-overlay';
+        
+        const modalContent = `
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 class="modal-title">${title}</h2>
+                    <button class="modal-close" onclick="popupManager.closeModal('${modalId}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ${content}
+                </div>
+                ${options.footer ? `<div class="modal-footer">${options.footer}</div>` : ''}
+            </div>
+        `;
+        
+        modal.innerHTML = modalContent;
+        document.body.appendChild(modal);
+        
+        // Lưu thông tin popup
+        this.activePopups.set(modalId, {
+            type: 'modal',
+            element: modal,
+            options: options
+        });
+        
+        // Đóng modal khi click overlay
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeModal(modalId);
+            }
+        });
+        
+        // Đóng modal bằng ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeModal(modalId);
+            }
+        });
+        
+        return modalId;
+    }
+
+    // Tạo floating window
+    createFloatingWindow(title, content, options = {}) {
+        const windowId = `floating-${++this.popupCounter}`;
+        const floatingWindow = document.createElement('div');
+        floatingWindow.id = windowId;
+        floatingWindow.className = 'floating-window';
+        
+        const windowContent = `
+            <div class="floating-window-header" id="${windowId}-header">
+                <h3 class="floating-window-title">${title}</h3>
+                <button class="floating-window-close" onclick="popupManager.closeFloatingWindow('${windowId}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="floating-window-body">
+                ${content}
+            </div>
+            ${options.footer ? `<div class="floating-window-footer">${options.footer}</div>` : ''}
+        `;
+        
+        floatingWindow.innerHTML = windowContent;
+        document.body.appendChild(floatingWindow);
+        
+        // Lưu thông tin popup
+        this.activePopups.set(windowId, {
+            type: 'floating',
+            element: floatingWindow,
+            options: options
+        });
+        
+        // Thêm tính năng kéo thả
+        if (options.draggable !== false) {
+            this.makeDraggable(windowId);
+        }
+        
+        return windowId;
+    }
+
+    // Đóng modal
+    closeModal(modalId) {
+        const popup = this.activePopups.get(modalId);
+        if (popup && popup.type === 'modal') {
+            popup.element.style.animation = 'modalSlideOut 0.3s ease-in';
+            setTimeout(() => {
+                document.body.removeChild(popup.element);
+                this.activePopups.delete(modalId);
+            }, 300);
+        }
+    }
+
+    // Đóng floating window
+    closeFloatingWindow(windowId) {
+        const popup = this.activePopups.get(windowId);
+        if (popup && popup.type === 'floating') {
+            popup.element.style.animation = 'floatingSlideOut 0.3s ease-in';
+            setTimeout(() => {
+                document.body.removeChild(popup.element);
+                this.activePopups.delete(windowId);
+            }, 300);
+        }
+    }
+
+    // Đóng tất cả popup
+    closeAll() {
+        this.activePopups.forEach((popup, id) => {
+            if (popup.type === 'modal') {
+                this.closeModal(id);
+            } else {
+                this.closeFloatingWindow(id);
+            }
+        });
+    }
+
+    // Tạo tính năng kéo thả cho floating window
+    makeDraggable(windowId) {
+        const window = document.getElementById(windowId);
+        const header = document.getElementById(`${windowId}-header`);
+        
+        if (!window || !header) return;
+        
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+        
+        function dragStart(e) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            
+            if (e.target === header) {
+                isDragging = true;
+            }
+        }
+        
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                
+                xOffset = currentX;
+                yOffset = currentY;
+                
+                setTranslate(currentX, currentY, window);
+            }
+        }
+        
+        function dragEnd(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+        
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+    }
+}
+
+// Khởi tạo popup manager
+const popupManager = new PopupManager();
+
+// Thêm CSS animation cho đóng popup
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes modalSlideOut {
+        from {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+        }
+    }
+    
+    @keyframes floatingSlideOut {
+        from {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+    }
+`;
+document.head.appendChild(style);
+
 // Export functions for global use
 window.PlanCraft = {
     showLoading,
@@ -336,5 +569,6 @@ window.PlanCraft = {
     viewUser,
     deleteUser,
     exportUsers,
-    toggleTheme
+    toggleTheme,
+    popupManager
 }; 

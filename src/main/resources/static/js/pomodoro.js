@@ -93,8 +93,10 @@ function toggleSound() {
     soundEnabled = !soundEnabled;
     const soundToggle = document.getElementById('soundToggle');
     const headerSoundToggle = document.getElementById('headerSoundToggle');
+    const popupSoundToggle = document.getElementById('popupSoundToggle');
     const icon = soundToggle.querySelector('i');
     const headerIcon = headerSoundToggle ? headerSoundToggle.querySelector('i') : null;
+    const popupIcon = popupSoundToggle ? popupSoundToggle.querySelector('i') : null;
     
     if (soundEnabled) {
         icon.className = 'fas fa-volume-up';
@@ -105,6 +107,11 @@ function toggleSound() {
             headerSoundToggle.classList.remove('muted');
             headerSoundToggle.title = 'Tắt âm thanh';
         }
+        if (popupIcon) {
+            popupIcon.className = 'fas fa-volume-up';
+            popupSoundToggle.classList.remove('muted');
+            popupSoundToggle.title = 'Tắt âm thanh';
+        }
         showToast('Âm thanh đã được bật', 'success');
     } else {
         icon.className = 'fas fa-volume-mute';
@@ -114,6 +121,11 @@ function toggleSound() {
             headerIcon.className = 'fas fa-volume-mute';
             headerSoundToggle.classList.add('muted');
             headerSoundToggle.title = 'Bật âm thanh';
+        }
+        if (popupIcon) {
+            popupIcon.className = 'fas fa-volume-mute';
+            popupSoundToggle.classList.add('muted');
+            popupSoundToggle.title = 'Bật âm thanh';
         }
         showToast('Âm thanh đã được tắt', 'info');
     }
@@ -153,6 +165,9 @@ function startPomodoro() {
             document.getElementById('headerStartBtn').style.display = 'flex';
             document.getElementById('headerPauseBtn').style.display = 'none';
             
+            // Update popup controls
+            updatePomodoroPopupControls();
+            
             // Remove running class from timer container
             const timerContainer = document.querySelector('.timer-display-container');
             if (timerContainer) {
@@ -170,6 +185,9 @@ function startPomodoro() {
     document.getElementById('headerStartBtn').style.display = 'none';
     document.getElementById('headerPauseBtn').style.display = 'flex';
     
+    // Update popup controls
+    updatePomodoroPopupControls();
+    
     // Add running class to timer container
     const timerContainer = document.querySelector('.timer-display-container');
     if (timerContainer) {
@@ -178,6 +196,12 @@ function startPomodoro() {
     
     // Show notification
     showToast('Bắt đầu phiên làm việc!', 'success');
+    
+    // Test popup timer after 2 seconds
+    setTimeout(() => {
+        console.log('Testing popup timer after start...');
+        showPopupTimer();
+    }, 2000);
     
     // Update status
     updateTimerLabel('Thời gian làm việc');
@@ -200,6 +224,9 @@ function pausePomodoro() {
     document.getElementById('pauseBtn').style.display = 'none';
     document.getElementById('headerStartBtn').style.display = 'flex';
     document.getElementById('headerPauseBtn').style.display = 'none';
+    
+    // Update popup controls
+    updatePomodoroPopupControls();
     
     // Remove running class from timer container
     const timerContainer = document.querySelector('.timer-display-container');
@@ -233,6 +260,9 @@ function resetPomodoro() {
     document.getElementById('headerPauseBtn').style.display = 'none';
     document.getElementById('timerLabel').textContent = 'Thời gian làm việc';
     
+    // Update popup controls
+    updatePomodoroPopupControls();
+    
     // Remove running class from timer container
     const timerContainer = document.querySelector('.timer-display-container');
     if (timerContainer) {
@@ -262,6 +292,9 @@ function updateTimerDisplay() {
     if (headerTime) {
         headerTime.textContent = timeString;
     }
+    
+    // Update popup timer
+    updatePopupTimerDisplay();
     
     // Update miniplayer if minimized
     if (isMinimized) {
@@ -315,10 +348,159 @@ function playBackgroundSound() {
 
 // Tab Visibility Detection
 function handleTabVisibilityChange() {
+    const wasVisible = isTabVisible;
     isTabVisible = !document.hidden;
+    
+    console.log('Tab visibility changed:', {
+        wasVisible: wasVisible,
+        isVisible: isTabVisible,
+        isRunning: isRunning,
+        documentHidden: document.hidden
+    });
+    
+    // Show popup when tab becomes hidden and timer is running
     if (!isTabVisible && isRunning) {
-        showToast('Timer vẫn chạy trong nền! Âm thanh sẽ phát khi kết thúc.', 'info');
+        console.log('Tab hidden and timer running - showing popup');
+        showPopupTimer();
+        showToast('Timer vẫn chạy trong nền! Popup timer đã được hiển thị.', 'info');
+    } 
+    // Hide popup when tab becomes visible
+    else if (isTabVisible && wasVisible === false) {
+        console.log('Tab visible again - hiding popup');
+        hidePopupTimer();
     }
+}
+
+// Popup Timer Functions
+// Pomodoro Popup Management
+let pomodoroPopupId = null;
+
+function showPopupTimer() {
+    console.log('showPopupTimer called:', {
+        isRunning: isRunning,
+        currentTime: currentTime
+    });
+    
+    if (isRunning && !pomodoroPopupId) {
+        const popupContent = createPomodoroPopupContent();
+        pomodoroPopupId = popupManager.createFloatingWindow(
+            'Pomodoro Timer',
+            popupContent,
+            {
+                draggable: true,
+                footer: `
+                    <button class="btn btn-secondary" onclick="hidePopupTimer()">Đóng</button>
+                    <button class="btn btn-primary" onclick="minimizePomodoroPopup()">Thu nhỏ</button>
+                `
+            }
+        );
+        
+        // Cập nhật hiển thị timer
+        updatePomodoroPopupDisplay();
+        console.log('Pomodoro popup created with ID:', pomodoroPopupId);
+    } else {
+        console.log('Cannot show popup:', {
+            isRunning: isRunning,
+            popupExists: !!pomodoroPopupId
+        });
+    }
+}
+
+function hidePopupTimer() {
+    console.log('hidePopupTimer called, popupId:', pomodoroPopupId);
+    
+    if (pomodoroPopupId) {
+        popupManager.closeFloatingWindow(pomodoroPopupId);
+        pomodoroPopupId = null;
+        console.log('Pomodoro popup closed successfully');
+    }
+}
+
+function createPomodoroPopupContent() {
+    return `
+        <div class="pomodoro-popup-content">
+            <div class="popup-time-display" id="popupTimeDisplay">25:00</div>
+            <div class="popup-timer-label" id="popupTimerLabel">Thời gian làm việc</div>
+            <div class="popup-timer-controls">
+                <button class="popup-control-btn" id="popupStartBtn" onclick="startPomodoro()" title="Bắt đầu">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="popup-control-btn" id="popupPauseBtn" onclick="pausePomodoro()" style="display: none;" title="Tạm dừng">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="popup-control-btn" id="popupResetBtn" onclick="resetPomodoro()" title="Đặt lại">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button class="popup-control-btn" id="popupSoundToggle" onclick="toggleSound()" title="Bật/Tắt âm thanh">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function minimizePomodoroPopup() {
+    if (pomodoroPopupId) {
+        hidePopupTimer();
+        // Có thể thêm logic để hiển thị miniplayer ở đây
+        showToast('Pomodoro timer đã được thu nhỏ', 'info');
+    }
+}
+
+function updatePomodoroPopupDisplay() {
+    if (!pomodoroPopupId) return;
+    
+    const popupTimeDisplay = document.getElementById('popupTimeDisplay');
+    const popupTimerLabel = document.getElementById('popupTimerLabel');
+    
+    if (popupTimeDisplay) {
+        const minutes = Math.floor(currentTime / 60);
+        const seconds = currentTime % 60;
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        popupTimeDisplay.textContent = timeString;
+    }
+    
+    if (popupTimerLabel) {
+        popupTimerLabel.textContent = isBreak ? 'Thời gian nghỉ ngơi' : 'Thời gian làm việc';
+    }
+}
+
+function updatePomodoroPopupControls() {
+    if (!pomodoroPopupId) return;
+    
+    const popupStartBtn = document.getElementById('popupStartBtn');
+    const popupPauseBtn = document.getElementById('popupPauseBtn');
+    const popupSoundToggle = document.getElementById('popupSoundToggle');
+    
+    if (popupStartBtn && popupPauseBtn) {
+        if (isRunning) {
+            popupStartBtn.style.display = 'none';
+            popupPauseBtn.style.display = 'flex';
+        } else {
+            popupStartBtn.style.display = 'flex';
+            popupPauseBtn.style.display = 'none';
+        }
+    }
+    
+    if (popupSoundToggle) {
+        const icon = popupSoundToggle.querySelector('i');
+        if (soundEnabled) {
+            icon.className = 'fas fa-volume-up';
+            popupSoundToggle.classList.remove('muted');
+        } else {
+            icon.className = 'fas fa-volume-mute';
+            popupSoundToggle.classList.add('muted');
+        }
+    }
+}
+
+// Alias cho backward compatibility
+function updatePopupTimerDisplay() {
+    updatePomodoroPopupDisplay();
+}
+
+function updatePopupControls() {
+    updatePomodoroPopupControls();
 }
 
 // Toggle Pomodoro dropdown
@@ -345,6 +527,12 @@ window.togglePomodoroDropdown = function() {
 
 // Initialize Pomodoro
 window.initializePomodoro = function() {
+    console.log('Initializing Pomodoro...');
+    
+    // Check if popup timer element exists
+    const popupTimer = document.getElementById('popupTimer');
+    console.log('Popup timer element:', popupTimer);
+    
     // Load saved settings
     loadPomodoroSettings();
     
@@ -359,6 +547,8 @@ window.initializePomodoro = function() {
     
     // Update display
     updateTimerDisplay();
+    
+    console.log('Pomodoro initialized');
 };
 
 // Load Pomodoro settings
@@ -390,8 +580,23 @@ function initializeAudioSettings() {
         Notification.requestPermission();
     }
     
-    // Add tab visibility change listener
+    // Remove existing listeners if any
+    document.removeEventListener('visibilitychange', handleTabVisibilityChange);
+    document.removeEventListener('pagehide', handlePageHide);
+    document.removeEventListener('pageshow', handlePageShow);
+    
+    // Add multiple event listeners for better compatibility
     document.addEventListener('visibilitychange', handleTabVisibilityChange);
+    document.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    
+    console.log('All tab visibility listeners added successfully');
+    
+    // Test the listener
+    console.log('Current document.hidden:', document.hidden);
+    console.log('Current isTabVisible:', isTabVisible);
     
     // Load sound preference
     const savedSoundEnabled = localStorage.getItem('pomodoroSoundEnabled');
@@ -466,4 +671,61 @@ window.startPomodoro = startPomodoro;
 window.pausePomodoro = pausePomodoro;
 window.resetPomodoro = resetPomodoro;
 window.toggleSound = toggleSound;
-window.initializePomodoro = initializePomodoro; 
+window.initializePomodoro = initializePomodoro;
+window.hidePopupTimer = hidePopupTimer;
+
+function updateTimerLabel(label) {
+    const timerLabel = document.getElementById('timerLabel');
+    if (timerLabel) {
+        timerLabel.textContent = label;
+    }
+}
+
+function updatePomodoroStatus(status) {
+    // This function is kept for compatibility but no longer needed
+    // since we removed the status display from header
+}
+
+// Test function for popup timer
+window.testPopupTimer = function() {
+    console.log('Manual test of popup timer...');
+    isRunning = true;
+    currentTime = 25 * 60;
+    showPopupTimer();
+};
+
+// Test function for tab visibility
+window.testTabVisibility = function() {
+    console.log('Testing tab visibility...');
+    console.log('document.hidden:', document.hidden);
+    console.log('isTabVisible:', isTabVisible);
+    console.log('isRunning:', isRunning);
+    
+    // Simulate tab change
+    handleTabVisibilityChange();
+};
+
+// Additional event handlers for better compatibility
+function handlePageHide() {
+    console.log('Page hide event triggered');
+    if (isRunning) {
+        showPopupTimer();
+    }
+}
+
+function handlePageShow() {
+    console.log('Page show event triggered');
+    hidePopupTimer();
+}
+
+function handleWindowBlur() {
+    console.log('Window blur event triggered');
+    if (isRunning) {
+        showPopupTimer();
+    }
+}
+
+function handleWindowFocus() {
+    console.log('Window focus event triggered');
+    hidePopupTimer();
+} 

@@ -91,7 +91,18 @@
                                 Mô tả chi tiết
                             </label>
                             <textarea name="description" class="form-input form-textarea" 
-                                      placeholder="Mô tả chi tiết về mục tiêu, các bước thực hiện, kết quả mong muốn..."></textarea>
+                                      placeholder="Mô tả chi tiết về mục tiêu, các bước thực hiện, kết quả mong muốn..." id="goal-description"></textarea>
+                        </div>
+
+                        <!-- Nút AI và kết quả -->
+                        <div class="form-group">
+                            <button type="button" class="btn btn-accent" id="ai-roadmap-btn" style="margin-bottom: 8px;">
+                                <i class="fas fa-robot"></i> Nhờ AI tạo lộ trình
+                            </button>
+                            <div id="roadmap-preview" style="margin-top: 12px;"></div>
+                            <button type="button" class="btn btn-success" id="confirm-ai-roadmap" style="margin-top: 8px;">
+                                <i class="fas fa-check"></i> Xác nhận
+                            </button>
                         </div>
 
                         <div class="flex gap-4 mt-8">
@@ -167,6 +178,95 @@
             const deadlineInput = document.querySelector('input[name="deadline"]');
             const today = new Date().toISOString().split('T')[0];
             deadlineInput.min = today;
+
+            // AI Roadmap
+            document.getElementById('ai-roadmap-btn').onclick = function() {
+                const name = document.querySelector('input[name="name"]').value;
+                const description = document.getElementById('goal-description').value;
+                const btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Đang nhờ AI...';
+                fetch('/api/goals/ai-roadmap', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, description})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    window._lastAiRoadmap = data; // Lưu lại để xác nhận
+                    renderRoadmapPreview(data);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-robot"></i> Nhờ AI tạo lộ trình';
+                })
+                .catch(err => {
+                    alert('Lỗi AI: ' + err);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-robot"></i> Nhờ AI tạo lộ trình';
+                });
+            };
+
+            // Hàm render preview lộ trình AI dạng timeline
+            function renderRoadmapPreview(data) {
+                const preview = document.getElementById('roadmap-preview');
+                if (!data || typeof data !== 'object') {
+                    preview.innerHTML = '<div style="color:red">Không có dữ liệu lộ trình hợp lệ!</div>';
+                    return;
+                }
+                let html = '';
+                // Goal info
+                html += `<div style="padding:16px; margin-bottom:16px; border:1px solid #e0e0e0; border-radius:8px; background:#fafbfc;">
+                    <h2 style="margin:0 0 8px 0; color:var(--primary-color);">🎯 ${data.name || ''}</h2>
+                    <div><b>Deadline:</b> ${data.deadline || ''}</div>
+                    <div><b>Lý do:</b> ${data.reason || ''}</div>
+                    <div><b>Mô tả:</b> ${data.description || ''}</div>
+                </div>`;
+                // Timeline
+                if (Array.isArray(data.stages)) {
+                    html += '<div class="timeline-container" style="position:relative; margin-left:20px; padding-left:20px; border-left:3px solid var(--primary-color);">';
+                    data.stages.forEach((stage, idx) => {
+                        html += `<div class="timeline-item" style="position:relative; margin-bottom:32px;">
+                            <div style="position:absolute; left:-32px; top:0; width:24px; height:24px; background:var(--primary-color); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1em;">${idx+1}</div>
+                            <div style="margin-left:8px;">
+                                <div style="font-weight:600; color:var(--accent-color); font-size:1.1em; margin-bottom:2px;">${stage.name || ''}</div>
+                                <div><b>Mô tả:</b> ${stage.description || ''}</div>
+                                <div><b>Bắt đầu:</b> ${stage.startDate || ''} &nbsp; <b>Kết thúc:</b> ${stage.endDate || ''}</div>`;
+                        // Tasks
+                        if (Array.isArray(stage.tasks) && stage.tasks.length > 0) {
+                            html += '<div style="margin-top:6px; margin-left:8px;"><b>Nhiệm vụ:</b><ul style="margin:4px 0 0 16px;">';
+                            stage.tasks.forEach((task, tIdx) => {
+                                html += `<li><b>${task.name || ''}</b>: ${task.description || ''}${task.date ? ' <span style=\"color:gray; font-size:0.95em;\">(' + task.date + ')</span>' : ''}</li>`;
+                            });
+                            html += '</ul></div>';
+                        }
+                        html += '</div></div>';
+                    });
+                    html += '</div>';
+                }
+                preview.innerHTML = html;
+            }
+
+            document.getElementById('confirm-ai-roadmap').onclick = function() {
+                // Lấy dữ liệu roadmap AI đã render
+                const data = window._lastAiRoadmap;
+                if (!data) {
+                    alert('Chưa có dữ liệu lộ trình để xác nhận!');
+                    return;
+                }
+                fetch('/api/goals/ai-save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                })
+                .then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Lưu thất bại!');
+                })
+                .then(response => {
+                    alert('Lưu thành công!');
+                    window.location.href = '/goals/' + response.id;
+                })
+                .catch(err => alert('Lỗi: ' + err));
+            };
         });
     </script>
 </body>
