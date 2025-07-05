@@ -476,65 +476,7 @@ body {
     gap: var(--spacing-3);
 }
 
-/* Pomodoro Popup Styles */
-.pomodoro-popup-content {
-    text-align: center;
-    padding: var(--spacing-4);
-}
 
-.popup-time-display {
-    font-size: 3rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-2);
-    font-family: 'Courier New', monospace;
-}
-
-.popup-timer-label {
-    font-size: var(--font-size-lg);
-    color: var(--gray-600);
-    margin-bottom: var(--spacing-4);
-    font-weight: 500;
-}
-
-.popup-timer-controls {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
-}
-
-.popup-control-btn {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: none;
-    background: var(--primary-color);
-    color: white;
-    font-size: var(--font-size-lg);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.popup-control-btn:hover {
-    background: var(--secondary-color);
-    transform: scale(1.1);
-}
-
-.popup-control-btn:active {
-    transform: scale(0.95);
-}
-
-.popup-control-btn.muted {
-    background: var(--gray-400);
-}
-
-.popup-control-btn.muted:hover {
-    background: var(--gray-500);
-}
 
 /* Floating Window Style */
 .floating-window {
